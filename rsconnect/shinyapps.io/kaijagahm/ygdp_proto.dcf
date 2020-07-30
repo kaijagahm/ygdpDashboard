@@ -1,0 +1,13 @@
+name: ygdp_proto
+title: ygdp_proto
+username:
+account: kaijagahm
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2628590
+bundleId: 3456100
+url: https://kaijagahm.shinyapps.io/ygdp_proto/
+when: 1596136914.23523
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: sandbox.R|ygdp_proto_data_prep.R
