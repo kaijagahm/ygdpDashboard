@@ -1,0 +1,12 @@
+# Dependencies for the app
+library(shiny)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(leaflet)
+library(leaflet.extras)
+library(boot)
+library(htmltools)
+library(here)
+source(here("scripts", "addLegend_decreasing.R"))
+source(here("scripts", "app_functions.R"))
