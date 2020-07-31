@@ -113,7 +113,9 @@ server <- shinyServer(function(input, output, session) {
   
   output$mymap <- renderLeaflet({
     leaflet(mapdf()) %>% 
-      addTiles(options = providerTileOptions(minZoom = 4)) %>% # can't zoom out, only in.
+      addProviderTiles(
+        providers$CartoDB.Positron,
+        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
       setView(-96, 37.8, 4) %>%
       addCircleMarkers(data = mapdf(), lat = ~Latitude, lng = ~ Longitude,
                        popup = ~label,
