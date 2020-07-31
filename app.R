@@ -7,16 +7,23 @@ library(leaflet)
 library(leaflet.extras)
 library(boot)
 library(htmltools)
-source("addLegend_decreasing.R")
-source("app_functions.R")
+library(here)
+source(here("scripts", "addLegend_decreasing.R"))
+source(here("scripts", "app_functions.R"))
 
 #Import data
-load("data/s11.Rda")
+load(here("data", "s11.Rda"))
 s11 <- s11 %>%
   mutate(SentenceText = as.character(SentenceText),
          Construction = as.character(Construction))
 sentences <- s11 %>% pull(SentenceText) %>% unique()
 demographic_vars <- c("Age group" = "AgeBin", "Gender", "Education", "Income bracket" = "Income", "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg")
+list_content <- function(col,content){
+  paste0('<div style="display:flex;"><i class="fa fa-circle"
+                                         style="color:',
+         col,';margin-top:3px;opacity:0.8;"></i><div style="color:black;padding-left:5px;">',
+         content,'</div></div>')
+}
 
 ui <- shinyUI(fluidPage(
   
@@ -33,12 +40,6 @@ ui <- shinyUI(fluidPage(
       selectInput("construction", "Grammatical construction", choices = unique(s11$Construction)),
       selectInput("sentence", "Sentence", choices = sentences),
       
-      # Specify map settings
-      h4("Map settings"),
-      
-      ## Range of ratings to show on the map
-      sliderInput("minmaxratings", "Choose min/max ratings to map:", min = 1, max = 5, step = 1, value = c(1, 5)),
-      
       # Select a demographic variable
       h4("Explore covariates (target sentence)"),
       selectInput("covariate", "Choose a demographic variable:", choices = demographic_vars, selected = demographic_vars[1])
@@ -49,6 +50,25 @@ ui <- shinyUI(fluidPage(
       # Map
       h4("Map of sentence judgments"),
       leafletOutput(outputId = "mymap"), 
+      absolutePanel(top = "30%", right = "2%",
+                    id="controls",
+                    style="z-index:500;",
+                    class = "panel panel-default",
+                    width = 110,
+                    draggable = TRUE, 
+                    div(htmlDependency("font-awesome", 
+                                       "5.13.0", "www/shared/fontawesome", package = "shiny", 
+                                       stylesheet = c("css/all.min.css", "css/v4-shims.min.css")),
+                        checkboxGroupInput(inputId = "ratings",
+                                           label = "Rating",
+                                           choiceNames = list(HTML(list_content(color_palette[5],"5 (accept)")),
+                                                              HTML(list_content(color_palette[4],"4")),
+                                                              HTML(list_content(color_palette[3],"3")),
+                                                              HTML(list_content(color_palette[2], "2")),
+                                                              HTML(list_content(color_palette[1], "1 (reject)"))),
+                                           choiceValues = c(5, 4, 3, 2, 1),
+                                           selected = c(5, 4, 3, 2, 1))
+                    )),
       br(),
       
       # Demographic plot
@@ -59,16 +79,16 @@ ui <- shinyUI(fluidPage(
 
 server <- shinyServer(function(input, output, session) {
   # Data frame for the map: subset by sentence and rating limits
-
+  
   constructiondf <- reactive({s11 %>%
       filter(Construction == input$construction)
-    })
-
+  })
+  
   observeEvent(constructiondf(), {
     choices <- unique(constructiondf()$SentenceText)
     updateSelectInput(session, "sentence", choices = choices)
   })
-
+  
   sentencedf <- reactive({
     req(input$construction) # only proceed with this operation if there is a construction selected
     constructiondf() %>% filter(SentenceText == input$sentence)
@@ -78,17 +98,12 @@ server <- shinyServer(function(input, output, session) {
     s11 %>% filter(SentenceText == input$sentence)
   })
   
-  ## Min/max ratings
-  mintarget <- reactive(input$minmaxratings[1])
-  maxtarget <- reactive(input$minmaxratings[2])
-  
   # Filter min/max ratings
   mapdf <- reactive({sentencedf() %>% 
       filter(SentenceText == input$sentence,
-             Judgment >= mintarget(),
-             Judgment <= maxtarget()) %>%
+             as.character(Judgment) %in% input$ratings) %>%
       mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
-    })
+  })
   
   # Define a color palette
   pal <- colorFactor(
@@ -106,12 +121,13 @@ server <- shinyServer(function(input, output, session) {
                        color = "black",
                        weight = 0.5,
                        radius = 7, opacity = 1,
-                       fillOpacity = 0.5) %>%
-      addLegend_decreasing("bottomright", pal = pal, values = c("5", "4", "3", "2", "1"),
-                title = "Sentence rating",
-                opacity = 1,
-                decreasing = T)
-
+                       fillOpacity = 0.5) #%>%
+    # addLegend_decreasing("bottomright", pal = pal, values = c("5", "4", "3", "2", "1"),
+    #           title = "Sentence rating",
+    #           opacity = 1,
+    #           decreasing = T) #%>%
+    #addControl(checkboxGroupInput("rSelect", label = "", choices = c("5", "4", "3", "2", "1"), selected = c("5", "4", "3", "2", "1"), width = '50%'), position = "topright") # commenting this out for now since I can't figure out how to merge it with the legend. Ultimately, this should replace the sliderInput "minmaxratings".
+    
   })
   
   # Sort by mean for only some variables
@@ -119,23 +135,17 @@ server <- shinyServer(function(input, output, session) {
   
   # Make a reactive expression for the selected demographic covariate name
   covariateTitleName <- reactive(names(demographic_vars[which(demographic_vars == input$covariate)]))
-
+  
   # Barplot of the demographic variable chosen
   output$barplot <- renderPlot({
-      sentence_barplot(df = sentencedf(), xvar = input$covariate, yvar = "Judgment", show_legend = F, xlab = T, order_by_mean = meansort()) +
+    sentence_barplot(df = sentencedf(), xvar = input$covariate, yvar = "Judgment", show_legend = F, xlab = T, order_by_mean = meansort()) +
       theme(text = element_text(size = 17))+
       scale_color_manual(color_palette)+
       ggtitle(paste0("Sentence judgments by ", # convert to lower if not Carver
                      if(covariateTitleName() %in% c("Carver dialect region", "ANAE dialect region")){covariateTitleName()}else{tolower(as.character(covariateTitleName()))})
-                     )
+      )
   })
 })
 
 #generic line that launches the app
 shinyApp(ui = ui, server = server)
-
-# One problem I've noticed is that if you zoom in on the map and then switch to a different sentence, it resets the zoom.
-# This link (https://stackoverflow.com/questions/34985889/how-to-get-the-zoom-level-from-the-leaflet-map-in-r-shiny) has a solution to that, but it uses slightly more advanced reactivity than I want to get into right this second. Come back to this.
-
-# Show demographic relationships only for the part of the map you're zoomed into
-# Hovertext with demographics for each point
