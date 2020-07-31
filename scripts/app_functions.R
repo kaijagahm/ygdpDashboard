@@ -11,6 +11,23 @@ library(ggplot2)
 # COLOR PALETTE ----------------------------------------------------------
 color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "#f5f5f5", "4" = "#80cdc1", "5" = "#018571")
 
+
+# HTML checkbox label formatting ------------------------------------------
+
+# content of the map rating labels
+list_content <- function(col,content){
+  paste0('<div style="display:flex;"><i class="fa fa-circle"
+                                         style="color:',
+         col,';margin-top:3px;opacity:0.8;"></i><div style="color:black;padding-left:5px;">',
+         content,'</div></div>')
+}
+
+htmlchoicenames <- list(HTML(list_content(color_palette[5],"5 (accept)")),
+     HTML(list_content(color_palette[4],"4")),
+     HTML(list_content(color_palette[3],"3")),
+     HTML(list_content(color_palette[2], "2")),
+     HTML(list_content(color_palette[1], "1 (reject)")))
+
 # FACTOR LEVELS ----------------------------------------------------------
 education_levels <- c("High school" = "Some high school, no diploma", "High school" = "High school diploma", "Some coll." = "Some college, no degree", "Associate" = "Associate degree", "Bachelor's" = "Bachelor's degree", "Graduate" = "Graduate degree")
 
@@ -19,6 +36,8 @@ age_bin_levels <- c("18-30" = "18-30", "31-40" = "31-40", "41-50" = "41-50", "51
 income_levels <- c("1-12.5", "12.5-25", "25-37.5", "37.5-50", "50-62.5", "62.5-75", "75-87.5", "87.5-100", "100+")
 
 urban_rural_levels <- c("Rural \n (pop < 15K)", "UC \n (pop 15-50K)", "Urban \n (pop > 50K)")
+
+demographic_vars <- c("Age group" = "AgeBin", "Gender", "Education", "Income bracket" = "Income", "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg") # demographic var choices for the in-app dropdown menu
 
 
 # MEAN FUNCTION ----------------------------------------------------------
@@ -87,7 +106,6 @@ sentence_barplot <- function(df, xvar, yvar,
     {if(xlab) xlab(xvar) else theme(axis.title.x = element_blank())}+
     {if(ylab) ylab("Proportion") else theme(axis.title.y = element_blank())}+
     {if(!show_legend) guides(fill = FALSE)}+
-    {if(xvar %in% c("Urban_Rural", "Gender")) theme(axis.text.x = element_text(angle = 0)) else theme(axis.text.x = element_text(angle = 45, hjust = 1))}+
     NULL
   return(plot)
 }
