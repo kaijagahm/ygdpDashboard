@@ -1,44 +1,29 @@
 # Prototyping a Shiny app for ygdp data
-library(shiny)
-library(dplyr)
-library(stringr)
-library(ggplot2)
-library(leaflet)
-library(leaflet.extras)
-library(boot)
-library(htmltools)
-library(here)
-source(here("scripts", "addLegend_decreasing.R"))
-source(here("scripts", "app_functions.R"))
+source("libraries.R")
 
 #Import data
 load(here("data", "s11.Rda"))
 s11 <- s11 %>%
   mutate(SentenceText = as.character(SentenceText),
          Construction = as.character(Construction))
-sentences <- s11 %>% pull(SentenceText) %>% unique()
-demographic_vars <- c("Age group" = "AgeBin", "Gender", "Education", "Income bracket" = "Income", "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg")
-list_content <- function(col,content){
-  paste0('<div style="display:flex;"><i class="fa fa-circle"
-                                         style="color:',
-         col,';margin-top:3px;opacity:0.8;"></i><div style="color:black;padding-left:5px;">',
-         content,'</div></div>')
-}
 
+source("scripts/app_functions.R")
+
+#UI
 ui <- shinyUI(fluidPage(
   
   #Add a title
-  titlePanel("YGDP Data: Survey 11"),
-  
-  #This creates a layout with a left sidebar and main section
+  titlePanel("YGDP Survey 11"),
   sidebarLayout(
     
     # sidebar panel for inputs
     sidebarPanel(
       
       # Select a sentence
-      selectInput("construction", "Grammatical construction", choices = unique(s11$Construction)),
-      selectInput("sentence", "Sentence", choices = sentences),
+      p("Select a grammatical construction to explore:"),
+      selectInput("construction", label = NULL, choices = unique(s11$Construction)),
+      p("Select an example sentence:"),
+      selectInput("sentence", label = NULL, choices = unique(s11$SentenceText)), # hadley's example made it seem like the choices should start as NULL, so I don't know why this is working...
       
       # Select a demographic variable
       h4("Explore covariates (target sentence)"),
@@ -52,22 +37,15 @@ ui <- shinyUI(fluidPage(
       leafletOutput(outputId = "mymap"), 
       absolutePanel(top = "30%", right = "2%",
                     id="controls",
-                    style="z-index:500;",
                     class = "panel panel-default",
                     width = 110,
                     draggable = TRUE, 
-                    div(htmlDependency("font-awesome", 
-                                       "5.13.0", "www/shared/fontawesome", package = "shiny", 
-                                       stylesheet = c("css/all.min.css", "css/v4-shims.min.css")),
+                    div(htmlDependency("font-awesome", "5.13.0", "www/shared/fontawesome", package = "shiny", 
+                                       stylesheet = c("css/all.min.css", "css/v4-shims.min.css")), # help idk what this does
                         checkboxGroupInput(inputId = "ratings",
-                                           label = "Rating",
-                                           choiceNames = list(HTML(list_content(color_palette[5],"5 (accept)")),
-                                                              HTML(list_content(color_palette[4],"4")),
-                                                              HTML(list_content(color_palette[3],"3")),
-                                                              HTML(list_content(color_palette[2], "2")),
-                                                              HTML(list_content(color_palette[1], "1 (reject)"))),
-                                           choiceValues = c(5, 4, 3, 2, 1),
-                                           selected = c(5, 4, 3, 2, 1))
+                                           label = "Rating", # name of the checkbox panel
+                                           choiceNames = htmlchoicenames, # created in app_functions.R
+                                           choiceValues = 5:1, selected = 5:1) # underlying values, and start with all selected
                     )),
       br(),
       
