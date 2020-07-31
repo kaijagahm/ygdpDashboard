@@ -9,7 +9,7 @@ library(ggplot2)
 
 
 # COLOR PALETTE ----------------------------------------------------------
-color_palette <- c("1" = "#2c7bb6", "2" = "#abd9e9", "3" = "#ffffbf", "4" = "#fdae61", "5" = "#d7191c")
+color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "#f5f5f5", "4" = "#80cdc1", "5" = "#018571")
 
 # FACTOR LEVELS ----------------------------------------------------------
 education_levels <- c("High school" = "Some high school, no diploma", "High school" = "High school diploma", "Some coll." = "Some college, no degree", "Associate" = "Associate degree", "Bachelor's" = "Bachelor's degree", "Graduate" = "Graduate degree")
