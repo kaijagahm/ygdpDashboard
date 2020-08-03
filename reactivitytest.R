@@ -5,7 +5,8 @@ source("libraries.R")
 load(here("data", "s11.Rda"))
 s11 <- s11 %>%
   mutate(SentenceText = as.character(SentenceText),
-         Construction = as.character(Construction))
+         Construction = as.character(Construction)) %>%
+  mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
 
 source("scripts/app_functions.R")
 
@@ -18,10 +19,8 @@ ui <- shinyUI(fluidPage(
     sidebarPanel(
       h1("YGDP Survey 11"),
       # Select a sentence
-      p("Select a grammatical construction to explore:"),
-      selectInput("construction", label = NULL, choices = unique(s11$Construction)),
       p("Select an example sentence:"),
-      selectInput("sentence", label = NULL, choices = NULL),
+      selectInput("sentence", label = NULL, choices = unique(s11$SentenceText)),
       actionButton("updatemap", "Update map")
     ),
     
@@ -30,7 +29,7 @@ ui <- shinyUI(fluidPage(
       # Map
       h4("Map of sentence judgments"),
       leafletOutput(outputId = "mymap"), 
-      absolutePanel(top = "30%", right = "2%",
+      absolutePanel(top = "255", right = "20",
                     id="controls",
                     class = "panel panel-default",
                     width = 110,
@@ -47,40 +46,6 @@ ui <- shinyUI(fluidPage(
 ))
 
 server <- shinyServer(function(input, output, session) {
-  # Data frame for the map: subset by sentence and rating limits
-  
-  eventReactive(input$updatemap, {
-    
-  })
-  
-  
-  
-  
-  constructiondf <- reactive({s11 %>%
-      filter(Construction == input$construction)
-  })
-  
-  observeEvent(constructiondf(), {
-    choices <- unique(constructiondf()$SentenceText)
-    updateSelectInput(session, "sentence", choices = choices)
-  })
-  
-  sentencedf <- reactive({
-    req(input$construction) # only proceed with this operation if there is a construction selected
-    constructiondf() %>% filter(SentenceText == input$sentence)
-  })
-  
-  sentencedf <- reactive({
-    s11 %>% filter(SentenceText == input$sentence)
-  })
-  
-  # Filter min/max ratings
-  mapdf <- reactive({sentencedf() %>% 
-      filter(SentenceText == input$sentence,
-             as.character(Judgment) %in% input$ratings) %>%
-      mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
-  })
-  
   # Define a color palette
   pal <- colorFactor(
     palette = color_palette, # defined in app_functions.R
@@ -88,20 +53,32 @@ server <- shinyServer(function(input, output, session) {
   )
   
   output$mymap <- renderLeaflet({
-    leaflet(mapdf()) %>% 
+    leaflet() %>% 
       addProviderTiles(
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
-      setView(-96, 37.8, 4) %>%
-      addCircleMarkers(data = mapdf(), lat = ~Latitude, lng = ~ Longitude,
-                       popup = ~label,
-                       fillColor = ~rev(pal(Judgment)), 
-                       color = "black",
-                       weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.5)
+      setView(-96, 37.8, 4)
     
   })
+  
+  observeEvent(input$updatemap, {
+  leafletProxy("mymap") %>%
+    clearMarkers() %>%
+    addCircleMarkers(data = s11 %>% filter(SentenceText == input$sentence), 
+                     lat = ~Latitude, lng = ~Longitude,
+                     popup = ~label,
+                     fillColor = ~rev(pal(Judgment)), 
+                     color = "black",
+                     weight = 0.5,
+                     radius = 7, opacity = 1,
+                     fillOpacity = 0.5)
+  })
+  
+  # mapdf <- reactive({
+  #   s11 %>% filter(SentenceText == input$sentence) %>%
+  #     mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
+  # })
+  
 })
 
 #generic line that launches the app
