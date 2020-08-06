@@ -28,8 +28,25 @@ ui <- shinyUI(fluidPage(
       h3("Ways to Explore"),
       selectInput("whatdo", "What would you like to do?", choices = c("Map this sentence", "See ratings by social categories", "Use this sentence in a boolean map view"), selected = "Map this sentence"),
       
+      # Map control panel
       conditionalPanel("input.whatdo == 'Map this sentence'",
-                       actionButton("updatemap", "Update map"))
+                       div(htmlDependency("font-awesome", "5.13.0", "www/shared/fontawesome", package = "shiny", 
+                                          stylesheet = c("css/all.min.css", "css/v4-shims.min.css")), # help idk what this does
+                           checkboxGroupInput(inputId = "ratings",
+                                              label = "Filter by rating", # name of the checkbox panel
+                                              choiceNames = htmlchoicenames, # from app_functions.R
+                                              choiceValues = 5:1, selected = 5:1)
+                       )),
+      
+      # Plots control panel
+      conditionalPanel("input.whatdo == 'See ratings by social categories'",
+                       # Select covariate
+                       selectInput("covariate", "Choose a demographic variable:", 
+                                   choices = demographic_vars, selected = demographic_vars[1])
+                       ),
+      
+      # Button to update the view
+      actionButton("viewbutton", "Submit")
     ),
     
     # Main panel: outputs, graphs, etc.
@@ -37,18 +54,25 @@ ui <- shinyUI(fluidPage(
       # Introductory text
       p("This dashboard allows you to explore data collected by the YGDP from 2015-2019. Through online surveys, we ask people from across the U.S. to judge sentences as acceptable/unacceptable."),
       p("We are NOT interested in what is 'proper' English. We want to study how people speak naturally and casually, and how their dialects vary according to geographic and social factors."),
-      leafletOutput("map")
+      conditionalPanel("input.whatdo == 'Map this sentence'",
+                       leafletOutput("map")),
+      conditionalPanel("input.whatdo == 'See ratings by social categories'",
+                       plotOutput("plot")),
+      conditionalPanel("input.whatdo == 'Use this sentence in a boolean map view'",
+                       leafletOutput("mapBoolean"))
     )
   )
 ))
 
 server <- shinyServer(function(input, output, session){
+# HOUSEKEEPING ------------------------------------------------------------
   # Define the color palette for the maps and graphs
   pal <- colorFactor(
     palette = color_palette, # defined in app_functions.R
     domain = factor(s11$Judgment)
   )
-  
+
+# DEFINE DATASET ----------------------------------------------------------
   # Get the data for the current construction
   constructionDat <- reactive({s11 %>% filter(Construction == input$construction)})
   
@@ -64,30 +88,37 @@ server <- shinyServer(function(input, output, session){
   
   # Define the initial data
   initialDat <- isolate(constructionDat() %>% filter(SentenceText == unique(constructionDat()$SentenceText)[1]))
+  initialCovariate <- isolate(input$covariate)
   
-  # Make the initial map
+# MAP ---------------------------------------------------------------------
+  # Make the initial static map
+  
   output$map <- renderLeaflet({
-    leaflet() %>% 
-      addProviderTiles(
-        providers$CartoDB.Positron,
-        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
-      setView(-96, 37.8, 4) %>%
-      addCircleMarkers(data = initialDat, 
-                       lat = ~Latitude, lng = ~Longitude,
-                       popup = ~label,
-                       fillColor = ~rev(pal(Judgment)), 
-                       color = "black",
-                       weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.5)
-    
+    if(input$whatdo == "Map this sentence"){
+      leaflet() %>% 
+        addProviderTiles(
+          providers$CartoDB.Positron,
+          options = providerTileOptions(minZoom = 4)) %>% # no zooming out
+        setView(-96, 37.8, 4) %>%
+        addCircleMarkers(data = initialDat, 
+                         lat = ~Latitude, lng = ~Longitude,
+                         popup = ~label,
+                         fillColor = ~rev(pal(Judgment)), 
+                         color = "black",
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.5)
+    }
   })
   
   
-  # When user clicks "Update map"...
-  observeEvent(input$updatemap, {
+  # On button click...
+  observeEvent(input$viewbutton, {
+    req(input$whatdo == "Map this sentence")
     # Define new data subset
-    sentenceDat <- constructionDat() %>% filter(SentenceText == input$sentence)
+    sentenceDat <- constructionDat() %>% 
+      filter(SentenceText == input$sentence,
+             as.character(Judgment) %in% input$ratings)
     
     # Update the map
     leafletProxy("map") %>%
@@ -101,7 +132,36 @@ server <- shinyServer(function(input, output, session){
                        radius = 7, opacity = 1,
                        fillOpacity = 0.5)
   })
+
+# DEMOGRAPHIC PLOTS -------------------------------------------------------
+  # Sort by mean for only some variables
+  meansort <- reactive(ifelse(input$covariate %in% c("Gender", "Race", "RegANAE", "CarverReg"), T, F))
   
+  # Update initial data on click
+  initialDat <- eventReactive(input$viewbutton,{
+    constructionDat() %>%
+      filter(SentenceText == isolate(input$sentence))
+  })
+  
+  # Update initial covariate name on click
+  initialCovariate <- eventReactive(input$viewbutton,{
+    isolate(input$covariate)
+  })
+  
+  # Get the covariate name
+  covariateName <- reactive({names(demographic_vars[which(demographic_vars == initialCovariate())])})
+  
+  # Make the plot
+  output$plot <- renderPlot({
+    if(input$whatdo == "See ratings by social categories"){
+      sentence_barplot(initialDat(), xvar = initialCovariate(), 
+                       yvar = "Judgment", show_legend = F, xlab = T, order_by_mean = meansort()) +
+        theme(text = element_text(size = 17))+
+        scale_color_manual(color_palette)+
+        ggtitle(paste0("Sentence judgments by ", covariateName())
+        )
+    }
+  })
 })
 
 shinyApp(ui = ui, server = server)
