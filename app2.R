@@ -162,4 +162,7 @@ server <- shinyServer(function(input, output, session){
 
 shinyApp(ui = ui, server = server)
                       
+
+# For the plot part: what about an eventReactive call where the event is input$whatdo == [plot], which makes an initial plot
+# And then an eventReactive call where the event is the submit button and then there's also a req() statement, which makes a different plot?
                       
