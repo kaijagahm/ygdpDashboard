@@ -64,5 +64,11 @@ s11 <- s11 %>%
                                          "E. New England" = "Eastern New England",
                                          "W. New England" = "Western New England"))
 
+# Change types and add label column for maps
+s11 <- s11 %>%
+  mutate(SentenceText = as.character(SentenceText),
+         Construction = as.character(Construction)) %>%
+  mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
+
 # Write out the data
-save(s11, file = here("test_shiny_apps", "ygdp_proto", "data", "s11.Rda"))
+save(s11, file = here("data", "s11.Rda"))
