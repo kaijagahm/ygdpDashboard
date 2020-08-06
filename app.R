@@ -24,6 +24,7 @@ ui <- shinyUI(fluidPage(
       selectInput("construction", label = NULL, choices = unique(s11$Construction)),
       p("Select an example sentence:"),
       selectInput("sentence", label = NULL, choices = unique(s11$SentenceText)), # hadley's example made it seem like the choices should start as NULL, so I don't know why this is working...
+      # If I change this to NULL, it breaks. I think it's because the filtering by ratings needs to work initially as well as once a selection has been made, but input$sentence is NULL until you've selected a construction.
       
       # Select a demographic variable
       h4("Explore covariates (target sentence)"),
@@ -35,7 +36,7 @@ ui <- shinyUI(fluidPage(
       # Map
       h4("Map of sentence judgments"),
       leafletOutput(outputId = "mymap"), 
-      absolutePanel(top = "30%", right = "2%",
+      absolutePanel(top = "255", right = "20",
                     id="controls",
                     class = "panel panel-default",
                     width = 110,
