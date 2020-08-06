@@ -134,33 +134,29 @@ server <- shinyServer(function(input, output, session){
   })
 
 # DEMOGRAPHIC PLOTS -------------------------------------------------------
-  # Sort by mean for only some variables
-  meansort <- reactive(ifelse(input$covariate %in% c("Gender", "Race", "RegANAE", "CarverReg"), T, F))
-  
-  # Update initial data on click
-  initialDat <- eventReactive(input$viewbutton,{
-    constructionDat() %>%
-      filter(SentenceText == isolate(input$sentence))
-  })
-  
-  # Update initial covariate name on click
-  initialCovariate <- eventReactive(input$viewbutton,{
-    isolate(input$covariate)
-  })
-  
   # Get the covariate name
-  covariateName <- reactive({names(demographic_vars[which(demographic_vars == initialCovariate())])})
+  #covariateName <- reactive({names(demographic_vars[which(demographic_vars == initialCovariate())])})
   
-  # Make the plot
-  output$plot <- renderPlot({
-    if(input$whatdo == "See ratings by social categories"){
-      sentence_barplot(initialDat(), xvar = initialCovariate(), 
-                       yvar = "Judgment", show_legend = F, xlab = T, order_by_mean = meansort()) +
+  observeEvent(input$viewbutton, {
+    req(input$whatdo == "See ratings by social categories")
+
+    # Sort by mean for only some variables
+    meansort <- ifelse(input$covariate %in% c("Gender", "Race", "RegANAE", "CarverReg"), T, F)
+    
+    # Define new data subset
+    sentenceDat <- constructionDat() %>% 
+      filter(SentenceText == input$sentence,
+             as.character(Judgment) %in% input$ratings)
+    
+    # Make a new plot
+    output$plot <- renderPlot({
+      sentence_barplot(sentenceDat, xvar = input$covariate, 
+                       yvar = "Judgment", show_legend = F, xlab = T, order_by_mean = meansort) +
         theme(text = element_text(size = 17))+
         scale_color_manual(color_palette)+
-        ggtitle(paste0("Sentence judgments by ", covariateName())
+        ggtitle(paste0("Sentence judgments by ", input$covariate)
         )
-    }
+    })
   })
 })
 
