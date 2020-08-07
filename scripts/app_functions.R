@@ -9,8 +9,12 @@ library(ggplot2)
 
 
 # COLOR PALETTE ----------------------------------------------------------
-color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "#f5f5f5", "4" = "#80cdc1", "5" = "#018571")
+color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "white", "4" = "#80cdc1", "5" = "#018571")
 
+pal <- colorFactor(
+  palette = color_palette, # defined in app_functions.R
+  domain = factor(s11$Judgment)
+)
 
 # HTML checkbox label formatting ------------------------------------------
 
@@ -22,11 +26,11 @@ list_content <- function(col,content){
          content,'</div></div>')
 }
 
-htmlchoicenames <- list(HTML(list_content(color_palette[5],"5 (accept)")),
+htmlchoicenames <- list(HTML(list_content(color_palette[5],"5 (totally acceptable sentence)")),
      HTML(list_content(color_palette[4],"4")),
      HTML(list_content(color_palette[3],"3")),
      HTML(list_content(color_palette[2], "2")),
-     HTML(list_content(color_palette[1], "1 (reject)")))
+     HTML(list_content(color_palette[1], "1 (totally unacceptable sentence, even in informal settings)")))
 
 # FACTOR LEVELS ----------------------------------------------------------
 education_levels <- c("High school" = "Some high school, no diploma", "High school" = "High school diploma", "Some coll." = "Some college, no degree", "Associate" = "Associate degree", "Bachelor's" = "Bachelor's degree", "Graduate" = "Graduate degree")
@@ -37,7 +41,7 @@ income_levels <- c("1-12.5", "12.5-25", "25-37.5", "37.5-50", "50-62.5", "62.5-7
 
 urban_rural_levels <- c("Rural \n (pop < 15K)", "UC \n (pop 15-50K)", "Urban \n (pop > 50K)")
 
-demographic_vars <- c("Age group" = "AgeBin", "Gender", "Education", "Income bracket" = "Income", "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg") # demographic var choices for the in-app dropdown menu
+demographic_vars <- c("Age group" = "AgeBin", "Gender" = "Gender", "Education" ="Education", "Income bracket" = "Income", "Race" = "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg") # demographic var choices for the in-app dropdown menu
 
 
 # MEAN FUNCTION ----------------------------------------------------------
