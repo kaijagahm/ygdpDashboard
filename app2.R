@@ -1,8 +1,8 @@
 # Libraries and data
 library(shiny)
-source("libraries.R")
 source(here("scripts", "input_output_tabs.R"))
 load(here("data", "s11.Rda"))
+source("libraries.R")
 
 ui <- fluidPage(
   # Title
@@ -35,10 +35,12 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session){
+  # Initial sentence data
+  currentDat <- reactiveVal(s11 %>% filter(Construction == initialConstruction, SentenceText == initialSentence)) # give it an initial data frame based on initialConstruction and initialSentence (defined at the top of the script)
   
   # CONSTRUCTION/SENTENCE DATA ----------------------------------------------
   # Get the data for the current construction
-  constructionDat <- reactive({s11 %>% filter(Construction == input$construction)})
+  constructionDat <- reactive({s11 %>% filter(Construction == input$construction)}) # for use in the sentenceSelector
   
   # Define the sentenceSelector
   output$sentenceSelector <- renderUI({
@@ -50,19 +52,20 @@ server <- function(input, output, session){
       selected = unique(constructionDat()$SentenceText)[1])
   })
   
+  # Update currentDat based on the sentence selector, whenever a new sentence is chosen and the update button is clicked
+  observeEvent(input$updatePlot, {
+    currentDat(s11 %>% filter(Construction == input$construction, SentenceText == input$sentence))
+  })
+  # Same thing for the plot, but additionally filter by rating
+  observeEvent(input$updateMap, {
+    currentDat(s11 %>% filter(Construction == input$construction, SentenceText == input$sentence,
+                              as.character(Judgment) %in% input$ratings))
+  })
+  
   # INPUT TABS -------------------------------------------------------------
   observeEvent(input$whatdo, {
     updateTabsetPanel(session, "inputControls", selected = input$whatdo) # Note: we can only do the thing with "selected" here because the names of the choices in input$whatdo match the names of the panels in inputControls.
   }) 
-  
-  df <- reactive({ # subset the data differently depending on the chosen action
-    switch(input$whatdo,
-           map = constructionDat() %>% filter(SentenceText == input$sentence,
-                                              as.character(Judgment) %in% input$ratings),
-           plot = constructionDat() %>% filter(SentenceText == input$sentence)
-           #mapBoolean = s11 %>% filter(SentenceText == input$sentence) 
-    )
-  })
   
   # OUTPUT TABS -------------------------------------------------------------
   ## update which tab is shown based on the selection
@@ -72,15 +75,15 @@ server <- function(input, output, session){
   
   # Simple map output
   output$map <- renderLeaflet({
-    req(input$sentence)
     leaflet() %>% 
       addProviderTiles(
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
       setView(-96, 37.8, 4) %>%
-      addCircleMarkers(data = df(), 
+      addCircleMarkers(data = currentDat(), 
                        lat = ~Latitude, lng = ~Longitude,
                        popup = ~label,
+                      # label = HTML(paste(df()$Gender, df()$Age, breaks = "<br>")), # super stuck on the multiline labels
                        fillColor = ~rev(pal(Judgment)), 
                        color = "black",
                        weight = 0.5,
@@ -89,18 +92,23 @@ server <- function(input, output, session){
   })
   
   # Plot output
-  ## Sort by mean?
-  meansort <- reactive({
-    req(input$covariate)
-    ifelse(input$covariate %in% c("Gender", "Race", "RegANAE", "CarverReg"), T, F)
+  ## Set up the covariate as a reactiveVal
+  covariate <- reactiveVal(initialCovariate)
+  
+  ## Update the covariate on button click
+  observeEvent(input$updatePlot, {
+    covariate(input$covariate)
   })
   
-  ## Get name of covariate
-  covariateName <- reactive({names(demographic_vars[which(demographic_vars == input$covariate)])})
+  ## Get name of covariate (to use in the plot title)
+  covariateName <- reactive({names(demographic_vars[which(demographic_vars == covariate())])})
+  
+  ## Sort by mean?
+  meansort <- reactive({ifelse(covariate() %in% c("Gender", "Race", "RegANAE", "CarverReg"), T, F)})
   
   ## Plot
   output$plot <- renderPlot({
-    sentence_barplot(df()[!is.na(df()[,input$covariate]),], xvar = input$covariate, #exclude rows that are NA for the covariate
+    sentence_barplot(currentDat()[!is.na(currentDat()[,covariate()]),], xvar = covariate(), #exclude rows that are NA for the covariate
                      yvar = "Judgment", xlab = F, order_by_mean = meansort()) +
       theme(text = element_text(size = 17))+
       scale_color_manual(color_palette)+
@@ -109,6 +117,19 @@ server <- function(input, output, session){
   })
   
   # mapBoolean output
+  construction2Dat <- reactive({s11 %>% filter(Construction == input$construction2)})
+  
+  # Define the sentenceSelector
+  output$sentence2Selector <- renderUI({
+    # Define the selector for the UI
+    selectInput(
+      inputId = "sentence", 
+      label = "Choose a second sentence:",
+      choices = unique(construction2Dat()$SentenceText),
+      selected = unique(construction2Dat()$SentenceText)[2])
+  })
 }
 
 shinyApp(ui = ui, server = server)
+
+# Note: it can be useful to use isolate() to wrap calls to reactive expressions when debugging in the console.
