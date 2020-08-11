@@ -1,8 +1,18 @@
 # Libraries and data
 library(shiny)
-source(here("scripts", "input_output_tabs.R"))
-load(here("data", "s11.Rda"))
+library(here)
 source("libraries.R")
+load(here("data", "s11.Rda"))
+source(here("scripts", "app_functions.R"))
+source(here("scripts", "input_output_tabs.R"))
+
+
+
+# Define color palette as a leaflet colorFactor palette
+pal <- colorFactor(
+  palette = color_palette, # defined in app_functions.R
+  domain = factor(s11$Judgment)
+)
 
 ui <- fluidPage(
   # Title
@@ -38,6 +48,15 @@ server <- function(input, output, session){
   # Initial sentence data
   currentDat <- reactiveVal(s11 %>% filter(Construction == initialConstruction, SentenceText == initialSentence)) # give it an initial data frame based on initialConstruction and initialSentence (defined at the top of the script)
   
+  # Initial sentence data for the boolean map view
+  boolDat <- reactiveValues(meetsCriteria = {s11 %>% 
+    filter(SentenceText == initialSentence, 
+           Judgment %in% 1:5) %>% 
+    bind_rows(s11 %>% 
+                filter(SentenceText == initialSentence2, 
+                       Judgment %in% 1:5))}, 
+  failsCriteria = NULL)
+  
   # CONSTRUCTION/SENTENCE DATA ----------------------------------------------
   # Get the data for the current construction
   constructionDat <- reactive({s11 %>% filter(Construction == input$construction)}) # for use in the sentenceSelector
@@ -54,12 +73,32 @@ server <- function(input, output, session){
   
   # Update currentDat based on the sentence selector, whenever a new sentence is chosen and the update button is clicked
   observeEvent(input$updatePlot, {
-    currentDat(s11 %>% filter(Construction == input$construction, SentenceText == input$sentence))
+    currentDat(s11 %>% filter(SentenceText == input$sentence))
   })
   # Same thing for the plot, but additionally filter by rating
   observeEvent(input$updateMap, {
-    currentDat(s11 %>% filter(Construction == input$construction, SentenceText == input$sentence,
+    currentDat(s11 %>% filter(SentenceText == input$sentence,
                               as.character(Judgment) %in% input$ratings))
+  })
+  #Same thing for the boolean plot, but allow both chosen sentences and filter by ratings
+  # UPDATE ##################################
+  observeEvent(input$updateMapBoolean, {
+    boolDat <- reactiveValues(meetsCriteria = {s11 %>% 
+      filter(SentenceText == input$sentence, 
+             Judgment %in% input$allowratings) %>% 
+      bind_rows(s11 %>% 
+                  filter(SentenceText == input$sentence2, 
+                         Judgment %in% input$allowratings2)) %>%
+      select(Latitude, Longitude, ResponseID) %>%
+      distinct()}, 
+    failsCriteria = {s11 %>%
+      filter(SentenceText == input$sentence,
+             !(Judgment %in% input$allowratings)) %>%
+      bind_rows(s11 %>%
+                  filter(SentenceText == input$sentence2,
+                         !(Judgment %in% input$allowratings2))) %>%
+      select(Latitude, Longitude, ResponseID) %>%
+      distinct()})
   })
   
   # INPUT TABS -------------------------------------------------------------
@@ -73,7 +112,7 @@ server <- function(input, output, session){
     updateTabsetPanel(session, "outputViews", selected = input$whatdo)
   })
   
-  # Simple map output
+  # SIMPLE MAP OUTPUT -------------------------------------------------------
   output$map <- renderLeaflet({
     leaflet() %>% 
       addProviderTiles(
@@ -90,8 +129,8 @@ server <- function(input, output, session){
                        radius = 7, opacity = 1,
                        fillOpacity = 0.5)
   })
-  
-  # Plot output
+
+  # PLOT OUTPUT -------------------------------------------------------
   ## Set up the covariate as a reactiveVal
   covariate <- reactiveVal(initialCovariate)
   
@@ -116,18 +155,42 @@ server <- function(input, output, session){
       )
   })
   
-  # mapBoolean output
-  construction2Dat <- reactive({s11 %>% filter(Construction == input$construction2)})
+  # BOOLEAN MAP OUTPUT -------------------------------------------------------
+  construction2Dat <- reactive({s11 %>% filter(Construction == input$construction2)}) # for use in the sentenceSelector 
   
   # Define the sentenceSelector
   output$sentence2Selector <- renderUI({
     # Define the selector for the UI
     selectInput(
-      inputId = "sentence", 
+      inputId = "sentence2", 
       label = "Choose a second sentence:",
       choices = unique(construction2Dat()$SentenceText),
       selected = unique(construction2Dat()$SentenceText)[2])
   })
+  
+  ## Make the map
+  output$mapBoolean <- renderLeaflet({
+    leaflet() %>% 
+      addProviderTiles(
+        providers$CartoDB.Positron,
+        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
+      setView(-96, 37.8, 4) %>%
+      addCircleMarkers(data = boolDat$meetsCriteria, 
+                       lat = ~Latitude, lng = ~Longitude,
+                       #popup = ~label,
+                       # label = HTML(paste(df()$Gender, df()$Age, breaks = "<br>")), # super stuck on the multiline labels
+                       color = "green",
+                       weight = 0.5,
+                       radius = 7, opacity = 1,
+                       fillOpacity = 0.5) %>%
+      addCircleMarkers(data = boolDat$failsCriteria,
+                       lat = ~Latitude, lng = ~Longitude,
+                       color = "black",
+                       weight = 0.5, radius = 7, opacity = 1, fillOpacity = 0.5)
+  })
+  
+  
+  
 }
 
 shinyApp(ui = ui, server = server)
