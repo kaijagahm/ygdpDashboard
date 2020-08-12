@@ -7,11 +7,15 @@ source(here("scripts", "app_functions.R"))
 source(here("scripts", "input_output_tabs.R"))
 
 
-
 # Define color palette as a leaflet colorFactor palette
 pal <- colorFactor(
   palette = color_palette, # defined in app_functions.R
   domain = factor(s11$Judgment)
+)
+
+palBoolean <- colorFactor(
+  palette = boolean_palette,
+  domain = factor(c("color1", "color2"))
 )
 
 ui <- fluidPage(
@@ -49,13 +53,9 @@ server <- function(input, output, session){
   currentDat <- reactiveVal(s11 %>% filter(Construction == initialConstruction, SentenceText == initialSentence)) # give it an initial data frame based on initialConstruction and initialSentence (defined at the top of the script)
   
   # Initial sentence data for the boolean map view
-  boolDat <- reactiveValues(meetsCriteria = {s11 %>% 
-    filter(SentenceText == initialSentence, 
-           Judgment %in% 1:5) %>% 
-    bind_rows(s11 %>% 
-                filter(SentenceText == initialSentence2, 
-                       Judgment %in% 1:5))}, 
-  failsCriteria = NULL)
+  boolDat <- reactiveVal({
+    booleanPivot(s11, initialSentence, initialSentence2, c(1:5), c(1:5)) # see app_functions.R
+  })
   
   # CONSTRUCTION/SENTENCE DATA ----------------------------------------------
   # Get the data for the current construction
@@ -81,24 +81,8 @@ server <- function(input, output, session){
                               as.character(Judgment) %in% input$ratings))
   })
   #Same thing for the boolean plot, but allow both chosen sentences and filter by ratings
-  # UPDATE ##################################
   observeEvent(input$updateMapBoolean, {
-    boolDat <- reactiveValues(meetsCriteria = {s11 %>% 
-      filter(SentenceText == input$sentence, 
-             Judgment %in% input$allowratings) %>% 
-      bind_rows(s11 %>% 
-                  filter(SentenceText == input$sentence2, 
-                         Judgment %in% input$allowratings2)) %>%
-      select(Latitude, Longitude, ResponseID) %>%
-      distinct()}, 
-    failsCriteria = {s11 %>%
-      filter(SentenceText == input$sentence,
-             !(Judgment %in% input$allowratings)) %>%
-      bind_rows(s11 %>%
-                  filter(SentenceText == input$sentence2,
-                         !(Judgment %in% input$allowratings2))) %>%
-      select(Latitude, Longitude, ResponseID) %>%
-      distinct()})
+    boolDat(booleanPivot(s11, input$sentence, input$sentence2, input$allowratings1, input$allowratings2))
   })
   
   # INPUT TABS -------------------------------------------------------------
@@ -126,8 +110,8 @@ server <- function(input, output, session){
                        fillColor = ~rev(pal(Judgment)), 
                        color = "black",
                        weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.5)
+                       radius = 6, opacity = 1,
+                       fillOpacity = 0.7)
   })
 
   # PLOT OUTPUT -------------------------------------------------------
@@ -175,18 +159,16 @@ server <- function(input, output, session){
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
       setView(-96, 37.8, 4) %>%
-      addCircleMarkers(data = boolDat$meetsCriteria, 
+      addCircleMarkers(data = boolDat(), 
                        lat = ~Latitude, lng = ~Longitude,
                        #popup = ~label,
                        # label = HTML(paste(df()$Gender, df()$Age, breaks = "<br>")), # super stuck on the multiline labels
-                       color = "green",
-                       weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.5) %>%
-      addCircleMarkers(data = boolDat$failsCriteria,
-                       lat = ~Latitude, lng = ~Longitude,
+                       fill = ~criteria,
+                       fillColor = ~palBoolean(criteria), 
                        color = "black",
-                       weight = 0.5, radius = 7, opacity = 1, fillOpacity = 0.5)
+                       weight = 0.5,
+                       radius = 6, opacity = 1,
+                       fillOpacity = 0.7)
   })
   
   
