@@ -1,20 +1,16 @@
 # Functions to make plots for the Shiny app
-
-
 # LIBRARIES --------------------------------------------------------------
 library(boot)
 library(forcats)
 library(dplyr)
 library(ggplot2)
+library(leaflet)
 
 
 # COLOR PALETTE ----------------------------------------------------------
 color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "white", "4" = "#80cdc1", "5" = "#018571")
+boolean_palette <- c("color1" = "goldenrod2", color2 = "gray20")
 
-pal <- colorFactor(
-  palette = color_palette, # defined in app_functions.R
-  domain = factor(s11$Judgment)
-)
 
 # HTML checkbox label formatting ------------------------------------------
 
@@ -31,6 +27,12 @@ htmlchoicenames <- list(HTML(list_content(color_palette[5],"5 (totally acceptabl
      HTML(list_content(color_palette[3],"3")),
      HTML(list_content(color_palette[2], "2")),
      HTML(list_content(color_palette[1], "1 (totally unacceptable sentence, even in informal settings)")))
+
+htmlchoicenamesShort <- list(HTML(list_content(color_palette[5],"5")),
+                             HTML(list_content(color_palette[4],"4")),
+                             HTML(list_content(color_palette[3],"3")),
+                             HTML(list_content(color_palette[2], "2")),
+                             HTML(list_content(color_palette[1], "1")))
 
 # FACTOR LEVELS ----------------------------------------------------------
 education_levels <- c("High school" = "Some high school, no diploma", "High school" = "High school diploma", "Some coll." = "Some college, no degree", "Associate" = "Associate degree", "Bachelor's" = "Bachelor's degree", "Graduate" = "Graduate degree")
@@ -113,3 +115,29 @@ sentence_barplot <- function(df, xvar, yvar,
     NULL
   return(plot)
 }
+
+# booleanPivot ----------------------------------------------------------
+## Takes inputs sentence1, sentence2, ratings1, ratings2. Creates wide-format minimal data frame with responseID, lat, long, s1, s2, and criteria (t/f meets/doesn't meet criteria set by ratings1 and ratings2)
+library(dplyr)
+library(tidyr)
+booleanPivot <- function(df, sentence1, sentence2, ratings1, ratings2){
+  wide <- df %>%
+    filter(SentenceText %in% c(sentence1, sentence2)) %>% # limit to the two input sentences
+    select(ResponseID, SentenceText, Latitude, Longitude, Judgment) %>% # select only the relevant cols
+    mutate(SentenceText = case_when(SentenceText == sentence1 ~ "s1", # change from sentence text to s1/s2 so we'll have standardized column names when we pivot
+                                    SentenceText == sentence2 ~ "s2")) %>%
+    pivot_wider(., id_cols = c(ResponseID, Latitude, Longitude), # perform the pivot
+                names_from = SentenceText,
+                values_from = Judgment) %>%
+    mutate(criteria = case_when(s1 %in% ratings1 & s2 %in% ratings2 ~ "color1", # create "criteria" column based on the values in s1 and s2
+                                TRUE ~ "color2"))
+  
+  return(wide) # return the new wide data frame.
+}
+
+sentence1 <- initialSentence
+sentence2 <- initialSentence2
+ratings1 <- c(1:5)
+ratings2 <- c(1:5)
+
+booleanPivot(s11, sentence1, sentence2, ratings1, ratings2)
