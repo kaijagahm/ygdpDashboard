@@ -1,19 +1,42 @@
 load("data/s11.Rda")
+library(dplyr)
+library(tidyr)
 
-ps <- unique(s11$ResponseID)
-s1 <- unique(s11$SentenceText[1])
-s2 <- unique(s11$SentenceText[2])
+s1 <- unique(s11$SentenceText[25])
+s2 <- unique(s11$SentenceText[31])
 
-s1d <- s11 %>%
-  filter(SentenceText == s1, 
-         ResponseID %in% s11 %>% filter(SentenceText == s2, Judgment > 4) %>% pull(responseID))
+r1 <- 1:5
+r2 <- 4:5
 
-s2d <- s11 %>%
-  filter(SentenceText == s2)
+head(s11)
 
-s2pass <- s2d %>%
-  filter(Judgment > 4) %>%
-  pull(ResponseID)
+test <- s11 %>%
+  filter(SentenceText %in% c(s1, s2))
 
-s1d <- s1d %>%
-  filter(ResponseID %in% s2pass)
+meetscriteria <- test %>%
+  group_by(ResponseID) %>%
+  filter(Judgment[SentenceText == s1] %in% r1 & Judgment[SentenceText == s2] %in% r2) %>%
+  select(ResponseID, Latitude, Longitude) %>%
+  distinct() %>%
+  mutate(criteria = T)
+
+failscriteria <- s11 %>%
+  filter(!(ResponseID %in% meetscriteria)) %>%
+  select(ResponseID, Latitude, Longitude) %>%
+  distinct() %>%
+  mutate(criteria = F)
+
+all <- bind_rows(meetscriteria, failscriteria) %>%
+  arrange(ResponseID)
+
+# Try wide instead
+testwide <- s11 %>%
+  filter(SentenceText %in% c(s1, s2)) %>%
+  select(ResponseID, SentenceText, Latitude, Longitude, Judgment) %>%
+  mutate(SentenceText = case_when(SentenceText == s1 ~ "s1",
+                                  SentenceText == s2 ~ "s2")) %>%
+  pivot_wider(., id_cols = c(ResponseID, Latitude, Longitude),
+              names_from = SentenceText,
+              values_from = Judgment) %>%
+  mutate(criteria = case_when(s1 %in% r1 & s2 %in% r2 ~ T,
+                              TRUE ~ F))
