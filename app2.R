@@ -171,6 +171,26 @@ server <- function(input, output, session){
                        fillOpacity = 0.7)
   })
   
+  output$mapBooleanLegend <- renderUI({
+    tags$div(
+      HTML(paste(strong(tags$span(style="color:#e6b23b", "Gold-colored points")), 
+                 "represent participants who rated '", em(input$sentence), "' as ", 
+                 paste(paste(input$allowratings1[1:length(input$allowratings1)-1], collapse = ", "), 
+                       " or ", 
+                       input$allowratings1[length(input$allowratings1)],
+                       " ",
+                       sep = ""), 
+                 strong("AND "),
+                 "'", em(input$sentence2), "' as ",
+                 paste(paste(input$allowratings2[1:length(input$allowratings2)-1], collapse = ", "),
+                       " or ",
+                       input$allowratings2[length(input$allowratings2)],
+                       ".",
+                       sep = ""),
+                 sep = ""),)
+    )
+  })
+  
   
   
 }
