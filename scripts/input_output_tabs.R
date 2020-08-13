@@ -52,6 +52,8 @@ output_view_tabs <- tabsetPanel(
            plotOutput("plot")
            ),
   tabPanel("mapBoolean",
-           leafletOutput("mapBoolean")
+           leafletOutput("mapBoolean"),
+           br(),
+           htmlOutput("mapBooleanLegend")
            )
 )
