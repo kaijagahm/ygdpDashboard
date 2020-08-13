@@ -171,9 +171,18 @@ server <- function(input, output, session){
                        fillOpacity = 0.7)
   })
   
-  output$mapBooleanLegend <- renderUI({
+  # Initial legend (before sentences and/or ratings are updated)
+  mapBooleanLegend <- reactiveVal({
     tags$div(
-      HTML(paste(strong(tags$span(style="color:#e6b23b", "Gold-colored points")), 
+      HTML(paste(strong(tags$span(style = "color:#e6b23b", "Gold-colored points")), "represent participants who rated '", em(initialSentence), "' as 1, 2, 3, 4 or 5 ", strong("AND "), em(initialSentence2), "' as 1, 2, 3, 4, or 5.", sep = ""))
+    )
+  })
+  
+  # Update legend with sentences and ratings when button is clicked
+  observeEvent(input$updateMapBoolean, {
+    mapBooleanLegend(
+      tags$div( # dynamically-generated text
+      HTML(paste(strong(tags$span(style = "color:#e6b23b", "Gold-colored points")), 
                  "represent participants who rated '", em(input$sentence), "' as ", 
                  paste(paste(input$allowratings1[1:length(input$allowratings1)-1], collapse = ", "), 
                        " or ", 
@@ -187,14 +196,20 @@ server <- function(input, output, session){
                        input$allowratings2[length(input$allowratings2)],
                        ".",
                        sep = ""),
-                 sep = ""),)
-    )
+                 sep = ""))
+    ))
   })
   
-  
-  
+  output$mapBooleanLegend <- renderUI({
+    validate(
+      need(!is.null(input$allowratings1) & !is.null(input$allowratings2), "Please select at least one rating per sentence")
+    )
+      mapBooleanLegend()
+    })
 }
 
 shinyApp(ui = ui, server = server)
 
 # Note: it can be useful to use isolate() to wrap calls to reactive expressions when debugging in the console.
+
+# Need to change the text so that there's no "or" if only one rating is selected.
