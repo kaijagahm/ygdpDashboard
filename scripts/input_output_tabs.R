@@ -2,7 +2,10 @@
 initialConstruction <- "Come with"
 initialSentence <- "If I go to the store, do you want to come with?"
 initialSentence2 <- "If you go there, bring a friend with."
+demographic_vars <- c("Age group" = "AgeBin", "Gender" = "Gender", "Education" ="Education", "Income bracket" = "Income", "Race" = "Race", "ANAE dialect region" = "RegANAE", "Carver dialect region" = "CarverReg") # demographic var choices for the in-app dropdown menu
 initialCovariate <- demographic_vars[1]
+initialAllowratings1 <- 1:5
+initialAllowratings2 <- 4:5
   
 input_control_tabs <- tabsetPanel(
   id = "inputControls",
@@ -26,7 +29,7 @@ input_control_tabs <- tabsetPanel(
            h3("Map parameters"),
            checkboxGroupInput("allowratings1", "Allow ratings (sentence 1)",
                               choiceNames = c("5", "4", "3", "2", "1"),
-                              choiceValues = 5:1, selected = 5:1,
+                              choiceValues = 5:1, selected = initialAllowratings1,
                               inline = T),
            selectInput("construction2", "Choose a second construction:", choices = unique(s11$Construction), 
                        selected = "Come with"),
@@ -34,7 +37,7 @@ input_control_tabs <- tabsetPanel(
            htmlOutput("sentence2Selector"), # this will be generated from the server
            checkboxGroupInput("allowratings2", "Allow ratings (sentence 2)",
                               choiceNames = c("5", "4", "3", "2", "1"),
-                              choiceValues = 5:1, selected = 5:1,
+                              choiceValues = 5:1, selected = initialAllowratings2,
                               inline = T),
            actionButton("updateMapBoolean", "Update map")
   )
@@ -54,6 +57,7 @@ output_view_tabs <- tabsetPanel(
   tabPanel("mapBoolean",
            leafletOutput("mapBoolean"),
            br(),
-           htmlOutput("mapBooleanLegend")
+           htmlOutput("mapBooleanLegend"),
+           checkboxInput("showneg", "Show points that don't meet the criteria", value = TRUE)
            )
 )
