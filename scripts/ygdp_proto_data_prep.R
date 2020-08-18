@@ -68,7 +68,30 @@ s11 <- s11 %>%
 s11 <- s11 %>%
   mutate(SentenceText = as.character(SentenceText),
          Construction = as.character(Construction)) %>%
-  mutate(label = paste(Gender, Age, Education, Income, Race, sep = "<br/>"))
+  mutate(label = paste("<b>Gender: </b>", Gender, "<br>", "<b>Age group: </b>", AgeBin, "<br>", "<b>Edu. level: </b>", Education, "<br>", "<b>Race: </b>", Race, "<br>", "<b>Location: </b>", paste0(RaisedCity, ", ", RaisedState)))
+
+# If points overlap, jitter them
+## Get only unique pairs of lat/long so we don't apply a different jitter to each person*rating
+temp <- s11 %>%
+  select(ResponseID, Latitude, Longitude) %>% 
+  distinct()
+
+dup <- duplicated(temp[,2:3]) # get only the second one of a duplicate pair--we want to change as little data as possible.
+
+temp <- temp %>%
+  mutate(duplicate = dup) # add a column to indicate whether each row is a duplicate
+
+temp <- temp %>%
+  mutate(Latitude = case_when(duplicate == T ~ jitter(Latitude, amount = 0.001),
+                              TRUE ~ Latitude),
+         Longitude = case_when(duplicate == T ~ jitter(Longitude, amount = 0.001),
+                               TRUE ~ Longitude))
+
+# Join the new Lat/Long to s11
+s11 <- s11 %>%
+  select(-c("Latitude", "Longitude")) %>%
+  left_join(temp, by = "ResponseID")
 
 # Write out the data
 save(s11, file = here("data", "s11.Rda"))
+
