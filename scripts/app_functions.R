@@ -5,11 +5,12 @@ library(forcats)
 library(dplyr)
 library(ggplot2)
 library(leaflet)
+load(here("data", "s11.Rda"))
 
 
 # COLOR PALETTE ----------------------------------------------------------
 color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "white", "4" = "#80cdc1", "5" = "#018571")
-boolean_palette <- c("color1" = "goldenrod2", color2 = "gray20")
+boolean_palette <- c("color1" = "goldenrod2", "color2" = "gray20")
 
 
 # HTML checkbox label formatting ------------------------------------------
@@ -123,10 +124,10 @@ library(tidyr)
 booleanPivot <- function(df, sentence1, sentence2, ratings1, ratings2){
   wide <- df %>%
     filter(SentenceText %in% c(sentence1, sentence2)) %>% # limit to the two input sentences
-    select(ResponseID, SentenceText, Latitude, Longitude, Judgment) %>% # select only the relevant cols
+    select(ResponseID, SentenceText, Latitude, Longitude, Judgment, label) %>% # select only the relevant cols
     mutate(SentenceText = case_when(SentenceText == sentence1 ~ "s1", # change from sentence text to s1/s2 so we'll have standardized column names when we pivot
                                     SentenceText == sentence2 ~ "s2")) %>%
-    pivot_wider(., id_cols = c(ResponseID, Latitude, Longitude), # perform the pivot
+    pivot_wider(., id_cols = c(ResponseID, Latitude, Longitude, label), # perform the pivot
                 names_from = SentenceText,
                 values_from = Judgment) %>%
     mutate(criteria = case_when(s1 %in% ratings1 & s2 %in% ratings2 ~ "color1", # create "criteria" column based on the values in s1 and s2
@@ -135,9 +136,17 @@ booleanPivot <- function(df, sentence1, sentence2, ratings1, ratings2){
   return(wide) # return the new wide data frame.
 }
 
-sentence1 <- initialSentence
-sentence2 <- initialSentence2
-ratings1 <- c(1:5)
-ratings2 <- c(1:5)
-
-booleanPivot(s11, sentence1, sentence2, ratings1, ratings2)
+# Converts a vector to a human-readable list with "and" or "or" before the last element
+vecToHumanList <- function(vec, conjunction = "and"){
+  if(length(vec) == 1){
+    out <- vec
+  }else if(length(vec) == 2){
+    out <- paste0(first(vec), " ", conjunction, " ", last(vec))
+  }else{
+    vecMinusLast <- vec[1:length(vec)-1]
+    vecMinusLastCollapsed <- paste(vecMinusLast, collapse = ", ")
+    end <- paste(", ", conjunction, " ", last(vec), sep = "")
+    out <- paste0(vecMinusLastCollapsed, end)
+  }
+  return(out)
+}
