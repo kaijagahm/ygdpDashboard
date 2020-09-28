@@ -15,7 +15,7 @@ ui <- dashboardPagePlus(
   ),
   sidebar = dashboardSidebar(
     sidebarMenu(
-      id = "leftMenu",
+      id = "leftSidebar",
       menuItem("Map view", tabName = "mapView", icon = icon("map")),
       menuItem("Social variables", tabName = "socialVariables", icon = icon("people-fill"))#,
       #menuItem("Section C", tabName = "Section_C", icon = icon( "gears"))
@@ -46,10 +46,10 @@ ui <- dashboardPagePlus(
 
 server <- function(input, output) {
   observe({
-    if (req(input$leftMenu) == "mapView"){
+    if (req(input$leftSidebar) == "mapView"){
       message("Map view has been selected")
       shinyjs::addClass(selector = "body", class = "control-sidebar-open") # the "control sidebar" is the righthand sidebar.
-      output$side_bar <- renderUI({
+      output$rightSidebar <- renderUI({
         rightSidebarTabContent(
           id = "mapViewFilters",
           title = "Filters for map view",
@@ -62,27 +62,26 @@ server <- function(input, output) {
         )
       })
     }
-    if (req(input$nav) == "Section_B"){
-      message("Section B has been selected")
-      # added in edit
+    if (req(input$leftSidebar) == "socialVariables"){
+      message("Social variables view has been selected")
       shinyjs::addClass(selector = "body", class = "control-sidebar-open")
-      output$side_bar <- renderUI({
+      output$rightSidebar <- renderUI({
         rightSidebarTabContent(
-          id = "T_B",
-          title = "Tab for section B",
-          p("Some content relevant for section B"),
-          textInput("caption", "Caption", "Data Summary")
+          id = "socialVariablesFilters",
+          title = "Filters for social variables view",
+          p("Some filters relevant to the social variables view"),
+          # textInput("caption", "Caption", "Data Summary")
         )
       })
     }
     
-    if (req(input$nav) == "Section_C"){
-      message("Section C has been selected")
-      # added in edit
-      shinyjs::removeClass(selector = "body", class = "control-sidebar-open") # remove the class of being open from the right (control) sidebar.
-      
-      output$rightSidebar <- renderUI({ div() })
-    }
+    # if (req(input$leftSidebar) == "Section_C"){
+    #   message("Section C has been selected")
+    #   # added in edit
+    #   shinyjs::removeClass(selector = "body", class = "control-sidebar-open") # remove the class of being open from the right (control) sidebar.
+    #   
+    #   output$rightSidebar <- renderUI({ div() })
+    # }
   })
 }
 
