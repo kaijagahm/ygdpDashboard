@@ -1,5 +1,4 @@
 # Shinydashboard test
-
 library(shinyjs)
 library(shinyWidgets)
 library(shinydashboard)
@@ -17,8 +16,7 @@ ui <- dashboardPagePlus(
     sidebarMenu(
       id = "leftSidebar",
       menuItem("Map view", tabName = "mapView", icon = icon("map")),
-      menuItem("Social variables", tabName = "socialVariables", icon = icon("people-fill"))#,
-      #menuItem("Section C", tabName = "Section_C", icon = icon( "gears"))
+      menuItem("Social variables", tabName = "socialVariables", icon = icon("people-fill"))
     )
   ),
   body = dashboardBody(
@@ -31,10 +29,7 @@ ui <- dashboardPagePlus(
         p("[Insert map here]")),
       tabItem(
         tabName = "socialCharts",
-        p("[Insert charts here]"))#,
-      # tabItem(
-      #   tabName = "Section_C",
-      #   p("Some content for section C"))
+        p("[Insert charts here]"))
     )
   ),
   rightsidebar = rightSidebar(
@@ -54,11 +49,6 @@ server <- function(input, output) {
           id = "mapViewFilters",
           title = "Filters for map view",
           p("Some filters relevant to the map view"),
-          # sliderInput(
-          #   "obs",
-          #   "Number of observations:",
-          #   min = 0, max = 1000, value = 500
-          # )
         )
       })
     }
@@ -70,18 +60,9 @@ server <- function(input, output) {
           id = "socialVariablesFilters",
           title = "Filters for social variables view",
           p("Some filters relevant to the social variables view"),
-          # textInput("caption", "Caption", "Data Summary")
         )
       })
     }
-    
-    # if (req(input$leftSidebar) == "Section_C"){
-    #   message("Section C has been selected")
-    #   # added in edit
-    #   shinyjs::removeClass(selector = "body", class = "control-sidebar-open") # remove the class of being open from the right (control) sidebar.
-    #   
-    #   output$rightSidebar <- renderUI({ div() })
-    # }
   })
 }
 
