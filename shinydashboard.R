@@ -1,100 +1,34 @@
 # Shinydashboard test
-library(shinyjs)
-library(shinyWidgets)
-library(shinydashboard)
-library(shinydashboardPlus)
-library(dashboardthemes)
+
+# Load the functions and libraries
 source("dashboardFunctions.R")
+
+# Load the different parts of the UI, which I've separated out into separate scripts to make them cleaner.
+source("header.R")
+source("leftSidebar.R")
+source("body.R")
+source("rightSidebar.R")
+source("footer.R")
 
 ui <- tagList(dashboardPagePlus(
   useShinyjs(),
   
-  ## Define dashboard header: title, icon for right sidebar, etc.
-  header = dashboardHeaderPlus(
-    title = "YGDP Data Explorer",
-    enable_rightsidebar = TRUE,
-    rightSidebarIcon = "sliders"
-  ),
+  ## Dashboard header (defined in header.R)
+  header = HEADER,
   
-  ## Define left sidebar and menu options
-  sidebar = dashboardSidebar(
-    leftSidebarScroll, # CSS to make the sidebar scroll. See dashboardFunctions.R
-    sidebarMenu(
-      id = "leftSidebar", # name of the left sidebar
-      menuItem(expandedName = "mapView", text = "Map view",  icon = icon("map"), startExpanded = TRUE,
-               # Title
-               h4("Select sentences"),
-               # Inputs
-               div(style = reduceSpacing,
-                   selectInput("survey", "Survey", 
-                               choices = c("5", "5b", "6", "6b", "7", "8", "9", "11", "12"),
-                               selected = "11",
-                               multiple = FALSE)),
-               ### Sentence selector
-               div(style = reduceSpacing,
-                   selectizeInput("sentence1", "Sentence 1:",
-                                  choices = list(
-                                    `After perfect` = c("I'm after eating ice cream.",
-                                                        "She's just after telling me that she got the promotion."),
-                                    `Needs washed` = c("Most babies like cuddled.",
-                                                       "My car needs washed.")
-                                  ), multiple = F)),
-               ### Ratings selector
-               checkboxGroupButtons("ratingsSentence1", "Rated:",
-                                    choiceNames = c("1", "2", "3", "4", "5"),
-                                    choiceValues = 1:5,
-                                    selected = 1:5),
-               ## CSS formatting for coloring the buttons. See dashboardFunctions.R
-               tags$script(formatButtons(1)[1]),
-               tags$script(formatButtons(1)[2]),
-               tags$script(formatButtons(1)[3]),
-               tags$script(formatButtons(1)[4]),
-               tags$script(formatButtons(1)[5]),
-               actionButton("sentence1Apply", "Apply"), # apply selections/ratings for sentence 1
-               hr(),
-               uiOutput("sentence2Controls"), # controls for the second sentence
-               uiOutput("sentence3Controls"), # controls for the third sentence
-               actionButton("addSentence", "+ Add a sentence") # button to add the second sentence
-      ),
-      menuItem(text = "Social variables", expandedName = "socialVariables", icon = icon("map"), startExpanded = FALSE,
-               div(style = reduceSpacing,
-                   selectInput("test", "Test", 
-                               choices = c("a", "b", "c", "d", "e"),
-                               selected = "a",
-                               multiple = FALSE)))
-    )
-  ),
+  ## Left sidebar and menu options (defined in leftSidebar.R)
+  sidebar = LEFTSIDEBAR,
   
-  ## Define dashboard body (maps/graphs)
-  body = dashboardBody(
-    shinyDashboardThemes( # not sure why we define the theme in the body as opposed to at the beginning of the UI, but okay.
-      theme = "grey_dark"
-    ),
-    tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
-      tabItem(
-        tabName = "map",
-        p("[Insert map here]")),
-      tabItem(
-        tabName = "socialCharts",
-        p("[Insert charts here]"))
-    )
-  ),
-  rightsidebar = rightSidebar(
-    background = "dark",
-    uiOutput("rightSidebar"), # We'll define this dynamically using renderUI in the server
-    title = "Right Sidebar"
-  )
+  ## Body (defined in body.R)
+  body = BODY,
+  
+  ## Right sidebar (defined in rightSidebar.R)
+  rightsidebar = RIGHTSIDEBAR
 ),
-tags$footer("Created by Kaija Gahm for the YGDP, October 2020. Code at https://github.com/kaijagahm/ygdpDashboard.", align = "center", style = "
-              position:absolute;
-              bottom:0;
-              width:100%;
-              height:18px;
-              color: #e6e6e6;
-              padding: 2px;
-              background-color: #46505a;
-              z-index: 500;
-              font-size:75%") # z index governs what goes in front/in back. The left sidebar is apparently 810. I don't know what the right sidebar is. 500 seems to get it behind both.
+
+## Footer (defined in footer.R)
+FOOTER
+
 )
 
 server <- function(input, output) {
@@ -115,9 +49,9 @@ server <- function(input, output) {
                              ),
                              multiple = F)),
           checkboxGroupButtons("ratingsSentence2", "Rated:",
-                               choiceNames = c("1", "2", "3", "4", "5"),
-                               choiceValues = 1:5,
-                               selected = 1:5),
+                               choiceNames = ratingChoiceNames,
+                               choiceValues = ratingChoiceValues,
+                               selected = ratingChoiceValues),
           tags$script(formatButtons(2)[1]), # nicely formatted rating selector buttons for sentence 2
           tags$script(formatButtons(2)[2]),
           tags$script(formatButtons(2)[3]),
@@ -144,9 +78,9 @@ server <- function(input, output) {
                              ),
                              multiple = F),
               checkboxGroupButtons("ratingsSentence3", "Rated:",
-                                   choiceNames = c("1", "2", "3", "4", "5"),
-                                   choiceValues = 1:5,
-                                   selected = 1:5),
+                                   choiceNames = ratingChoiceNames,
+                                   choiceValues = ratingChoiceValues,
+                                   selected = ratingChoiceValues),
               tags$script(formatButtons(3)[1]),
               tags$script(formatButtons(3)[2]),
               tags$script(formatButtons(3)[3]),
