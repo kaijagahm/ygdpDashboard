@@ -40,3 +40,32 @@ leftSidebarScroll <- tags$style( # css code to make the left sidebar scroll.
 # Rating choices ----------------------------------------------------------
 ratingChoiceNames <- c("1", "2", "3", "4", "5")
 ratingChoiceValues <- 1:5
+
+## full function to define the pretty colored rating buttons
+prettyRatingSelector <- function(sentenceNum){
+  name <- paste0("ratingsSentence", sentenceNum)
+  prs <- tagList(checkboxGroupButtons(name, "Rated:",
+                                      choiceNames = ratingChoiceNames,
+                                      choiceValues = ratingChoiceValues,
+                                      selected = ratingChoiceValues),
+                 tags$script(formatButtons(sentenceNum)[1]), # nicely formatted rating selector buttons for sentence 2
+                 tags$script(formatButtons(sentenceNum)[2]),
+                 tags$script(formatButtons(sentenceNum)[3]),
+                 tags$script(formatButtons(sentenceNum)[4]),
+                 tags$script(formatButtons(sentenceNum)[5]))
+  return(prs)
+}
+
+
+# Create join selector ----------------------------------------------------
+prettyJoinSelector <- function(sentenceNum){
+  name <- paste0("joinType", sentenceNum)
+  pjs <- tagList(
+    radioGroupButtons(name, label = "How joined:",
+                      choices = c("AND", "OR", "NOT"),
+                      selected = "AND",
+                      status = "info")
+  )
+  return(pjs)
+}
+

@@ -35,8 +35,15 @@ server <- function(input, output) {
   # Define a reactiveVal to store the current number of sentences being used in the map view
   nSentences <- reactiveVal(1)
   
+  # Choices for colorCriteria (in right sidebar)
+  allChoices <- c("Selected criteria", "Sentence 1 ratings", "Sentence 2 ratings", "Sentence 3 ratings")
+  colorCriteriaChoices <- reactive(allChoices[1:(nSentences() + 1)])
+  
+  ## Define UI for Sentence 2 and Sentence 3
   observeEvent(input$addSentence, { # when they click the addSentence button
+    ## Sentence 2
     if(is.null(input$sentence2)){ # if sentence 2 hasn't been selected yet, render sentence 2 selector
+      nSentences(2) # update nSentences
       output$sentence2Controls <- renderUI({
         tagList(
           div(style = reduceSpacing,
@@ -48,24 +55,16 @@ server <- function(input, output) {
                                                   "My car needs washed.")
                              ),
                              multiple = F)),
-          checkboxGroupButtons("ratingsSentence2", "Rated:",
-                               choiceNames = ratingChoiceNames,
-                               choiceValues = ratingChoiceValues,
-                               selected = ratingChoiceValues),
-          tags$script(formatButtons(2)[1]), # nicely formatted rating selector buttons for sentence 2
-          tags$script(formatButtons(2)[2]),
-          tags$script(formatButtons(2)[3]),
-          tags$script(formatButtons(2)[4]),
-          tags$script(formatButtons(2)[5]),
-          radioGroupButtons("joinType2", label = "How joined:", # create the joinType2 selector
-                            choices = c("AND", "OR", "NOT"),
-                            selected = "AND",
-                            status = "info"),
-          actionButton("sentence2Apply", "Apply"), # apply selections/ratings for sentence 2
+          prettyRatingSelector(sentenceNum = 2), # defined in dashboardFunctions.R
+          div(style="display:inline-block; margin-right: -1em", prettyJoinSelector(sentenceNum = 2)),
+          div(style="display:inline-block; margin-left: -1em", actionBttn("trash2", icon = icon("trash"), style = "minimal")),
           hr() # horizontal bar
         )
       })
+      
+      ## Sentence 3
     }else if(!is.null(input$sentence2)){ # if sentence 2 has already been selected
+      nSentences(3) # update nSentences
       output$sentence3Controls <- renderUI({
         tagList(
           div(style = reduceSpacing,
@@ -77,24 +76,14 @@ server <- function(input, output) {
                                                   "My car needs washed.")
                              ),
                              multiple = F),
-              checkboxGroupButtons("ratingsSentence3", "Rated:",
-                                   choiceNames = ratingChoiceNames,
-                                   choiceValues = ratingChoiceValues,
-                                   selected = ratingChoiceValues),
-              tags$script(formatButtons(3)[1]),
-              tags$script(formatButtons(3)[2]),
-              tags$script(formatButtons(3)[3]),
-              tags$script(formatButtons(3)[4]),
-              tags$script(formatButtons(3)[5]),
-              radioGroupButtons("joinType3", label = "How Joined:",
-                                choices = c("AND", "OR", "NOT"),
-                                selected = "AND",
-                                status = "info"),
-              actionButton("sentence3Apply", "Apply"), # apply selection/ratings for sentence 1
-              hr() # horizontal bar
+              prettyRatingSelector(sentenceNum = 3), # defined in dashboardFunctions.R
+              div(style="display:inline-block; margin-right: -1em", prettyJoinSelector(sentenceNum = 3)),
+              div(style="display:inline-block; margin-left: -1em", actionBttn("trash3", icon = icon("trash"), style = "minimal"))
           )
         )
       })
+      
+      ## Disallow adding more than 3 sentences
       removeUI(
         selector = "#addSentence"
       )
@@ -105,7 +94,7 @@ server <- function(input, output) {
   observeEvent(input$sidebarItemExpanded, {
     if(req(input$sidebarItemExpanded) == "mapView"){
       message("Map view has been selected.")
-      shinyjs::addClass(selector = "body", class = "control-sidebar-open") #open the "control sidebar" (righthand sidebar) when the menu tab is selected
+      #shinyjs::addClass(selector = "body", class = "control-sidebar-open") #open the "control sidebar" (righthand sidebar) when the menu tab is selected
       output$rightSidebar <- renderUI({
         rightSidebar(
           rightSidebarTabContent(
@@ -129,10 +118,7 @@ server <- function(input, output) {
                           value = T),
             radioButtons("colorCriteria",
                          label = "Color points by:",
-                         choices = c("Selected criteria",
-                                     "Sentence 1 ratings",
-                                     "Sentence 2 ratings",
-                                     "Sentence 3 ratings")),
+                         choices = colorCriteriaChoices()),
             actionButton("displaySettingsApply", "Apply",
                          style = "background-color: #A8F74A")
           )
