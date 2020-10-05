@@ -23,22 +23,14 @@ LEFTSIDEBAR <- dashboardSidebar(
                                   `Needs washed` = c("Most babies like cuddled.",
                                                      "My car needs washed.")
                                 ), multiple = F)),
-             ### Ratings selector
-             checkboxGroupButtons("ratingsSentence1", "Rated:",
-                                  choiceNames = ratingChoiceNames,
-                                  choiceValues = ratingChoiceValues,
-                                  selected = ratingChoiceValues),
-             ## CSS formatting for coloring the buttons. See dashboardFunctions.R
-             tags$script(formatButtons(1)[1]),
-             tags$script(formatButtons(1)[2]),
-             tags$script(formatButtons(1)[3]),
-             tags$script(formatButtons(1)[4]),
-             tags$script(formatButtons(1)[5]),
-             actionButton("sentence1Apply", "Apply"), # apply selections/ratings for sentence 1
+             prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
              hr(),
              uiOutput("sentence2Controls"), # controls for the second sentence
              uiOutput("sentence3Controls"), # controls for the third sentence
-             actionButton("addSentence", "+ Add a sentence") # button to add the second sentence
+             br(),
+             actionButton("addSentence", "+ Add a sentence"), # button to add the second sentence
+             div(style="display:inline-block", actionButton("sentencesReset", "Reset all", style = "background-color: #4AA8F7")),
+             div(style="display:inline-block", actionButton("sentencesApply", "Apply", style = "background-color: #A8F74A"))
     ),
     menuItem(text = "Social variables", expandedName = "socialVariables", icon = icon("map"), startExpanded = FALSE,
              div(style = reduceSpacing,
