@@ -7,7 +7,7 @@ BODY <- dashboardBody(
   ),
   tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
     tabItem(
-      tabName = "map",
+      tabName = "pointMaps",
       p("[Insert map here]")),
     tabItem(
       tabName = "socialCharts",
