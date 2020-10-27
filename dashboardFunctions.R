@@ -9,22 +9,32 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(dashboardthemes)
 
+# Named group split function from Romain Francois
+named_group_split <- function(.tbl, ...) {
+  grouped <- group_by(.tbl, ...)
+  names <- rlang::eval_bare(rlang::expr(paste(!!!group_keys(grouped), sep = " / ")))
+  
+  grouped %>% 
+    group_split() %>% 
+    rlang::set_names(names)
+}
+
 # COLOR PALETTE ----------------------------------------------------------
 color_palette <- c("1" = "#a6611a", "2" = "#dfc27d", "3" = "white", "4" = "#80cdc1", "5" = "#018571")
 boolean_palette <- c("color1" = "goldenrod2", "color2" = "gray20")
 
 
 # Spacing -----------------------------------------------------------------
-reduceSpacing <- "margin-bottom: -2em; padding: 0px"
+reduceSpacing <- "margin-bottom: -2em; margin-top: -1em; padding: 0px"
 
 
 # CSS/HTML ---------------------------------------------------------------------
 base <- "$(\"input:checkbox[name='INPUTNAME'][value='VAL']\").parent().css('background-color', 'COLOR');"
 
-formatButtons <- function(sentenceNumber, baseString = base, colors = color_palette){
+formatButtons <- function(name, baseString = base, colors = color_palette){
   formats <- lapply(color_palette, function(x) str_replace(base, "COLOR", x)) %>% 
     unlist() %>% 
-    str_replace(., "INPUTNAME", paste0("ratingsSentence", as.character(sentenceNumber))) %>% 
+    str_replace(., "INPUTNAME", name) %>% 
     map2(.x = ., .y = as.character(1:5), function(.x, .y) str_replace(.x, "VAL", .y)) %>% 
     unlist()
   return(formats)
@@ -44,15 +54,17 @@ ratingChoiceValues <- 1:5
 ## full function to define the pretty colored rating buttons
 prettyRatingSelector <- function(sentenceNum){
   name <- paste0("ratingsSentence", sentenceNum)
-  prs <- tagList(checkboxGroupButtons(name, "Rated:",
+  prs <- tagList(checkboxGroupButtons(inputId = name, "Rated:",
                                       choiceNames = ratingChoiceNames,
                                       choiceValues = ratingChoiceValues,
-                                      selected = ratingChoiceValues),
-                 tags$script(formatButtons(sentenceNum)[1]), # nicely formatted rating selector buttons for sentence 2
-                 tags$script(formatButtons(sentenceNum)[2]),
-                 tags$script(formatButtons(sentenceNum)[3]),
-                 tags$script(formatButtons(sentenceNum)[4]),
-                 tags$script(formatButtons(sentenceNum)[5]))
+                                      selected = ratingChoiceValues,
+                                      status = "primary")#,
+                 # tags$script(formatButtons(name)[1]), # nicely formatted rating selector buttons for sentence 2
+                 # tags$script(formatButtons(name)[2]),
+                 # tags$script(formatButtons(name)[3]),
+                 # tags$script(formatButtons(name)[4]),
+                 # tags$script(formatButtons(name)[5])
+  )
   return(prs)
 }
 
@@ -62,10 +74,38 @@ prettyJoinSelector <- function(sentenceNum){
   name <- paste0("joinType", sentenceNum)
   pjs <- tagList(
     radioGroupButtons(name, label = "How joined:",
-                      choices = c("AND", "OR", "NOT"),
+                      choices = c("AND", "OR"),
                       selected = "AND",
                       status = "info")
   )
   return(pjs)
 }
+
+
+# Sentence choices --------------------------------------------------------
+## default sentence
+defaultSentence1 <- "I'm after eating ice cream."
+
+
+# Color criteria choices (points) -----------------------------------------
+# 1 sentence: Selected criteria, Sentence 1 ratings
+# 2+ sentences: Selected criteria, Sentence 1 ratings, Sentence 2 ratings, Mean rating, Median rating, Min rating, Max rating
+# colorCriteriaChoicesPoints <- list(c("Selected criteria", "Sentence 1 ratings"),
+#                                    c("Selected criteria", "Sentence 1 ratings", "Sentence 2 ratings", "Mean rating", "Median rating", "Min rating", "Max rating"))
+
+
+# Sentence choices, in list
+getSentenceChoices <- function(df){ # function to get a list of sentence choices from a surveyData() data frame.
+  a <- bind_rows(lapply(df, as.data.frame)) %>%
+    select(constructionName, sentenceText) %>%
+    distinct() %>%
+    group_by(constructionName) %>%
+    named_group_split(constructionName) %>%
+    lapply(., function(x) x %>% pull(sentenceText)) %>%
+    lapply(., as.list)
+  return(a)
+}
+
+
+
 
