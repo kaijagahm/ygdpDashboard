@@ -87,13 +87,6 @@ prettyJoinSelector <- function(sentenceNum){
 defaultSentence1 <- "I'm after eating ice cream."
 
 
-# Color criteria choices (points) -----------------------------------------
-# 1 sentence: Selected criteria, Sentence 1 ratings
-# 2+ sentences: Selected criteria, Sentence 1 ratings, Sentence 2 ratings, Mean rating, Median rating, Min rating, Max rating
-# colorCriteriaChoicesPoints <- list(c("Selected criteria", "Sentence 1 ratings"),
-#                                    c("Selected criteria", "Sentence 1 ratings", "Sentence 2 ratings", "Mean rating", "Median rating", "Min rating", "Max rating"))
-
-
 # Sentence choices, in list
 getSentenceChoices <- function(df){ # function to get a list of sentence choices from a surveyData() data frame.
   a <- bind_rows(lapply(df, as.data.frame)) %>%
