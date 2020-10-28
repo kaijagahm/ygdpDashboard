@@ -23,10 +23,8 @@ LEFTSIDEBAR <- dashboardSidebar(
              ### Sentence selector
              div(id = "sentence1controls", div(style = reduceSpacing,
                  selectizeInput("sentence1", "Sentence 1:",
-                                choices = str_extract(names(sentencesNestedList[[1]]), 
-                                                      "(?<=\\_).*$"),
-                                selected = str_extract(names(sentencesNestedList[[1]]), 
-                                                       "(?<=\\_).*$")[1], 
+                                choices = names(sentencesNestedList[[1]]),
+                                selected = names(sentencesNestedList[[1]]), 
                                 multiple = F)),
              prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
              hr(),
