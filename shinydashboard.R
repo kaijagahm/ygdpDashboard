@@ -4,7 +4,7 @@
 # Load data
 library(here)
 load("data/points/sentencesNestedList.Rda")
-snl <- sentencesNestedList # because I don't want to keep typing that.
+snl <- sentencesNestedList %>% lapply(as.list) # because I don't want to keep typing that.
 
 # Load the functions and libraries
 library(shiny)
@@ -64,15 +64,15 @@ server <- function(input, output, session){
     filteredData <- reactive({
       req(chosenData())
       chosenData() %>%
-        {if(!is.null(input$ageButtons)) filter(., ageBin %in% input$ageButtons) else .} %>%
-        {if(!is.null(input$ageSlider)) filter(., age > input$ageSlider[1], age < input$ageSlider[2]) else .} %>%
-        {if(!is.null(input$gender)) filter(., gender %in% input$gender) else .} %>%
-        {if(!is.null(input$race)) filter(., raceCats %in% input$race) else .} %>%
-        {if(!is.null(input$education)) filter(., education %in% input$education) else .} #%>%
-        # {if(is.null(input$ageNAs)) filter(., !is.na(age)) else .} %>%
-        # {if(is.null(input$genderNAs)) filter(., !is.na(gender)) else .} %>%
-        # {if(is.null(input$raceNAs)) filter(., !is.na(raceCats)) else .} %>%
-        # {if(is.null(input$educationNAs)) filter(., !is.na(education)) else .}
+        {if(!is.null(input$ageButtons)) filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
+        {if(!is.null(input$ageSlider)) filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
+        {if(!is.null(input$gender)) filter(., (is.na(gender)) | (gender %in% input$gender)) else .} %>%
+        {if(!is.null(input$race)) filter(., (is.na(raceCats)) | (raceCats %in% input$race)) else .} %>%
+        {if(!is.null(input$education)) filter(., (is.na(education)) | (education %in% input$education)) else .} %>%
+        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>%
+        {if(input$genderNAs == F) filter(., !is.na(gender)) else .} %>%
+        {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
+        {if(input$educationNAs == F) filter(., !is.na(education)) else .}
     })
     print(dim(filteredData()))
   }, ignoreInit = TRUE)
