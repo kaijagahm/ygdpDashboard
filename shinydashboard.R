@@ -1,13 +1,17 @@
 # Shinydashboard test
 
-# Load the functions and libraries
-library(shiny)
-source("dashboardFunctions.R")
-library(here)
-library(rlist)
 
 # Load data
-load(here("data", "points", "sentencesNestedList.Rda"))
+library(here)
+load("data/points/sentencesNestedList.Rda")
+snl <- sentencesNestedList # because I don't want to keep typing that.
+
+# Load the functions and libraries
+library(shiny)
+library(dplyr)
+library(stringr)
+source("dashboardFunctions.R")
+library(rlist)
 
 # Load the different parts of the UI, which I've separated out into separate scripts to make them cleaner
 source("header.R")
@@ -38,15 +42,48 @@ FOOTER
 )
 
 server <- function(input, output, session){
-  # Initialize sentence counters
+  # Initialize sentence trackers
   nSentences <- reactiveVal(1)
   activeSentences <- reactiveVal(1)
+  selectorIDs <- reactive({paste0("sentence", activeSentences())}) # inputId's of the active sentence selectors
+  chosenSentences <- reactive({ # list of sentences the user has chosen.
+    reactiveValuesToList(input)[selectorIDs()]
+  })
+  
+  # RATINGS DATA ------------------------------------------------------------
+  # Subset the sentences list to include only the chosen sentences.
+  observeEvent(input$sentencesApply|input$pointFiltersApply, {
+    if(!is.null(chosenSentences())){
+      chosenData <- reactive({
+        surveyData()[unique(unlist(chosenSentences()))] %>%
+          lapply(., as.data.frame) %>%
+          bind_rows(.id = NULL)
+      })
+    }
+
+    filteredData <- reactive({
+      req(chosenData())
+      chosenData() %>%
+        {if(!is.null(input$ageButtons)) filter(., ageBin %in% input$ageButtons) else .} %>%
+        {if(!is.null(input$ageSlider)) filter(., age > input$ageSlider[1], age < input$ageSlider[2]) else .} %>%
+        {if(!is.null(input$gender)) filter(., gender %in% input$gender) else .} %>%
+        {if(!is.null(input$race)) filter(., raceCats %in% input$race) else .} %>%
+        {if(!is.null(input$education)) filter(., education %in% input$education) else .} #%>%
+        # {if(is.null(input$ageNAs)) filter(., !is.na(age)) else .} %>%
+        # {if(is.null(input$genderNAs)) filter(., !is.na(gender)) else .} %>%
+        # {if(is.null(input$raceNAs)) filter(., !is.na(raceCats)) else .} %>%
+        # {if(is.null(input$educationNAs)) filter(., !is.na(education)) else .}
+    })
+    print(dim(filteredData()))
+  }, ignoreInit = TRUE)
+  
+  
   
   ## Data for sentence options (varies depending on which survey is selected)
-  surveyData <- reactiveVal(sentencesNestedList[[1]]) # starts with the data from the first survey
+  surveyData <- reactiveVal(snl[[1]]) # starts with the data from the first survey
   observeEvent(input$survey, { # when survey input changes, change data
     name <- paste0("S", input$survey) # paste on an S to create the name
-    surveyData(sentencesNestedList[[name]]) # update to new survey data
+    surveyData(snl[[name]]) # update to new survey data
   })
   
   
@@ -68,7 +105,7 @@ server <- function(input, output, session){
     })
   })
   
-
+  
   # COLOR CRITERIA CHOICES --------------------------------------------------
   colorCriteriaChoices <- reactiveVal(c("Selected criteria", "Sentence 1 ratings")) # initialize with 1st set of choices
   observeEvent(activeSentences(), {
@@ -78,7 +115,6 @@ server <- function(input, output, session){
       colorCriteriaChoices(c("Selected criteria", paste0("Sentence ", activeSentences(), " ratings"), "Mean rating", "Median rating", "Min rating", "Max rating"))
     }
   })
-  
   
   
   # ADD SENTENCE ------------------------------------------------------------
@@ -125,7 +161,7 @@ server <- function(input, output, session){
     # Reset survey selection
     updateSelectInput(session,
                       "survey",
-                      selected = str_replace(names(sentencesNestedList), "^S", "")[1])
+                      selected = str_replace(names(snl), "^S", "")[1])
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1", 
