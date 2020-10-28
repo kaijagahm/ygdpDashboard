@@ -100,5 +100,12 @@ getSentenceChoices <- function(df){ # function to get a list of sentence choices
 }
 
 
+# Factor levels -----------------------------------------------------------
+genderLevels <- c("female", "male", "nonbinary/other" = "other")
+raceLevels <- c("asian", "black", "hispanic/latinx", "native american", "pacific islander", "white", "other")
+educationLevels <- c("some high school", "high school diploma", "some college", "associate degree" = "associate", "bachelor's degree" = "bachelor's", "graduate degree" = "graduate")
+ageBinLevels <- c("18-30", "31-40", "41-50", "51-60", ">61")
+
+
 
 
