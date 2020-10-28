@@ -10,7 +10,7 @@ RIGHTSIDEBAR <- rightSidebar(
 
 # Age input widget --------------------------------------------------------
 ageWidget <- div(
-  checkboxGroupInput("ageNAs", "Age:", choices = includeNAsText, selected = includeNAsText),
+  checkboxGroupInput("ageNAs", "Age:", choices = includeNAsText, selected = NULL),
   tabsetPanel(
     tabPanel("range",
              br(),
