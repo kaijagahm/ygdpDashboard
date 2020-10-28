@@ -10,7 +10,8 @@ RIGHTSIDEBAR <- rightSidebar(
 
 # Age input widget --------------------------------------------------------
 ageWidget <- div(
-  checkboxGroupInput("ageNAs", "Age:", choices = includeNAsText, selected = NULL),
+  h5("Age:"),
+  checkboxInput("ageNAs", includeNAsText, value = TRUE),
   tabsetPanel(
     tabPanel("range",
              br(),
@@ -21,8 +22,7 @@ ageWidget <- div(
     tabPanel("bins",
              br(),
              checkboxGroupButtons("ageButtons", label = NULL,
-                                  choices = c("18-30", "31-40", 
-                                              "41-50", "51-60", "61+")
+                                  choices = ageBinLevels
              ))
   )
 )
@@ -30,10 +30,11 @@ ageWidget <- div(
 
 # Gender input widget -----------------------------------------------------
 genderWidget <- div(
-  checkboxGroupInput("genderNAs", "Gender:", choices = includeNAsText, selected = includeNAsText),
+  h5("Gender:"),
+  checkboxInput("genderNAs", includeNAsText, value = T),
   pickerInput("gender", label = NULL,
-              choices = tolower(c("Male", "Female", "Nonbinary/Other")),
-              selected = tolower(c("Male", "Female", "Nonbinary/Other")), 
+              choices = genderLevels,
+              selected = genderLevels, 
               options = list(`actions-box` = TRUE), 
               multiple = T)
 )
@@ -41,12 +42,11 @@ genderWidget <- div(
 
 # Race input widget -------------------------------------------------------
 raceWidget <- div(
-  checkboxGroupInput("raceNAs", "Race:", choices = includeNAsText, selected = includeNAsText),
+  h5("Race:"),
+  checkboxInput("raceNAs", includeNAsText, value = T),
   pickerInput("race", label = NULL,
-              choices = c("asian", "black", "hispanic/latinx", 
-                          "native american", "pacific islander", "white", "other"),
-              selected = c("asian", "black", "hispanic/latinx", 
-                           "native american", "pacific islander", "white", "other"),
+              choices = raceLevels,
+              selected = raceLevels,
               options = list(`actions-box` = TRUE),
               multiple = T)
 )
@@ -54,14 +54,11 @@ raceWidget <- div(
 
 # Education input widget --------------------------------------------------
 educationWidget <- div(
-  checkboxGroupInput("educationNAs", "Education level:", choices = includeNAsText, selected = includeNAsText),
+  h5("Education level:"),
+  checkboxInput("educationNAs", includeNAsText, value = T),
   pickerInput("education", label = NULL, 
-              choices = tolower(c("Some HS", "High school diploma", 
-                                  "Some college", "Bachelor's degree", 
-                                  "Associate degree", "Graduate degree")), 
-              selected = tolower(c("Some HS", "High school diploma", 
-                                   "Some college", "Bachelor's degree", 
-                                   "Associate degree", "Graduate degree")), 
+              choices = educationLevels, 
+              selected = educationLevels, 
               options = list(`actions-box` = TRUE), 
               multiple = T)
 )
