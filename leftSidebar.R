@@ -1,5 +1,6 @@
 # Dashboard left sidebar
 source("dashboardFunctions.R")
+load("data/points/snl.Rda")
 
 leftSidebarWidth <- 250
 
@@ -17,14 +18,14 @@ LEFTSIDEBAR <- dashboardSidebar(
              # Inputs
              div(style = reduceSpacing,
                  selectInput("survey", "Survey", 
-                             choices = str_replace(names(sentencesNestedList), "^S", ""),
-                             selected = str_replace(names(sentencesNestedList), "^S", "")[1],
+                             choices = str_replace(names(snl), "^S", ""),
+                             selected = str_replace(names(snl), "^S", "")[1],
                              multiple = FALSE)),
              ### Sentence selector
              div(id = "sentence1controls", div(style = reduceSpacing,
                  selectizeInput("sentence1", "Sentence 1:",
-                                choices = names(sentencesNestedList[[1]]),
-                                selected = names(sentencesNestedList[[1]]), 
+                                choices = names(snl[[1]]),
+                                selected = names(snl[[1]]), 
                                 multiple = F)),
              prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
              hr(),
