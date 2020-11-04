@@ -1,17 +1,17 @@
 # Shinydashboard test
-
-
 # Load data
 library(here)
-load("data/points/sentencesNestedList.Rda")
-snl <- sentencesNestedList %>% lapply(as.list) # because I don't want to keep typing that.
-
-# Load the functions and libraries
 library(shiny)
 library(dplyr)
 library(stringr)
+load("data/points/snl.Rda")
+library(reactlog)
+
+# tell shiny to log all reactivity
+reactlog_enable()
+
+# Load the functions and libraries
 source("dashboardFunctions.R")
-library(rlist)
 
 # Load the different parts of the UI, which I've separated out into separate scripts to make them cleaner
 source("header.R")
@@ -52,7 +52,7 @@ server <- function(input, output, session){
   
   # RATINGS DATA ------------------------------------------------------------
   # Subset the sentences list to include only the chosen sentences.
-  observeEvent(input$sentencesApply|input$pointFiltersApply, {
+  observeEvent(input$sentencesApply|input$pointFiltersApply|input$sentencesReset|input$pointFiltersReset, {
     if(!is.null(chosenSentences())){
       chosenData <- reactive({
         surveyData()[unique(unlist(chosenSentences()))] %>%
@@ -64,12 +64,12 @@ server <- function(input, output, session){
     filteredData <- reactive({
       req(chosenData())
       chosenData() %>%
-        {if(!is.null(input$ageButtons)) filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
-        {if(!is.null(input$ageSlider)) filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
-        {if(!is.null(input$gender)) filter(., (is.na(gender)) | (gender %in% input$gender)) else .} %>%
-        {if(!is.null(input$race)) filter(., (is.na(raceCats)) | (raceCats %in% input$race)) else .} %>%
-        {if(!is.null(input$education)) filter(., (is.na(education)) | (education %in% input$education)) else .} %>%
-        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>%
+        {if(input$ageTabs == "range") filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
+        {if(input$ageTabs == "bins") filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
+        filter((is.na(gender)) | (gender %in% input$gender)) %>%
+        filter((is.na(raceCats)) | (raceCats %in% input$race)) %>%
+        filter((is.na(education)) | (education %in% input$education)) %>%
+        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, we don't need a separate test for which age filter tab is selected.
         {if(input$genderNAs == F) filter(., !is.na(gender)) else .} %>%
         {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
         {if(input$educationNAs == F) filter(., !is.na(education)) else .}
@@ -77,14 +77,12 @@ server <- function(input, output, session){
     print(dim(filteredData()))
   }, ignoreInit = TRUE)
   
-  
-  
   ## Data for sentence options (varies depending on which survey is selected)
   surveyData <- reactiveVal(snl[[1]]) # starts with the data from the first survey
   observeEvent(input$survey, { # when survey input changes, change data
     name <- paste0("S", input$survey) # paste on an S to create the name
     surveyData(snl[[name]]) # update to new survey data
-  })
+  }, ignoreInit = T)
   
   
   # UPDATE SENTENCE CHOICES -------------------------------------------------
@@ -104,18 +102,7 @@ server <- function(input, output, session){
                            selected = getSentenceChoices(surveyData())[[1]][[1]])
     })
   })
-  
-  
-  # COLOR CRITERIA CHOICES --------------------------------------------------
-  colorCriteriaChoices <- reactiveVal(c("Selected criteria", "Sentence 1 ratings")) # initialize with 1st set of choices
-  observeEvent(activeSentences(), {
-    if(length(activeSentences()) == 1){
-      colorCriteriaChoices(c("Selected criteria", "Sentence 1 ratings"))
-    }else{
-      colorCriteriaChoices(c("Selected criteria", paste0("Sentence ", activeSentences(), " ratings"), "Mean rating", "Median rating", "Min rating", "Max rating"))
-    }
-  })
-  
+
   
   # ADD SENTENCE ------------------------------------------------------------
   ### Define function to add UI components
@@ -148,11 +135,27 @@ server <- function(input, output, session){
     nSentences(nSentences() + 1) # update nSentences
     #print(paste("nsentences = ", nSentences()))
     print(activeSentences())
+    
+    # Update the color criteria choices
+    updateSelectInput(session, 
+                      inputId = "colorCriteriaPoints", 
+                      choices = c("Selected criteria", 
+                                  paste0("Sentence ", activeSentences(), " ratings"), 
+                                  "Mean rating", 
+                                  "Median rating", 
+                                  "Min rating", 
+                                  "Max rating"))
   })
   
+
+  # RESET FILTERS -----------------------------------------------------------
+  observeEvent(input$pointFiltersReset, {
+    updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
+    updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
+  }, ignoreInit = T)
+
   
-  
-  # RESET BUTTON ------------------------------------------------------------
+  # RESET SENTENCES ------------------------------------------------------------
   observeEvent(input$sentencesReset, {
     # Reset sentence counters
     activeSentences(1)
@@ -176,7 +179,7 @@ server <- function(input, output, session){
     )
     
     print(activeSentences())
-  })
+  }, ignoreInit = T)
   
   ## Determine what shows up in the right menu bar, and when it opens/closes
   observeEvent(input$sidebarItemExpanded, {
@@ -208,14 +211,14 @@ server <- function(input, output, session){
             title = "Display settings",
             id = "pointDisplaySettings",
             icon = "gears",
-            checkboxInput("showCriteria", 
+            checkboxInput("showCriteriaPoints", 
                           label = "Show points that don't match criteria?", 
                           value = T),
-            selectInput("colorCriteria",
+            selectInput("colorCriteriaPoints",
                         label = "Color points by:",
-                        choices = colorCriteriaChoices(),
+                        choices = c("Selected criteria", "Sentence 1 ratings"),
                         multiple = F),
-            actionButton("displaySettingsApply", "Apply",
+            actionButton("displaySettingsApplyPoints", "Apply",
                          style = "background-color: #A8F74A"),
             style = 'margin-top: -2em'
           )
@@ -230,13 +233,13 @@ server <- function(input, output, session){
           title = "Display settings",
           id = "interpolationDisplaySettings",
           icon = "gears",
-          checkboxInput("showCriteria", 
+          checkboxInput("showCriteriaInterp", 
                         label = "Show points that don't match criteria?", 
                         value = T),
-          radioButtons("colorCriteria",
+          radioButtons("colorCriteriaInterp",
                        label = "Color points by:",
-                       choices = colorCriteriaChoices()),
-          actionButton("displaySettingsApply", "Apply",
+                       choices = c("Selected criteria", "Sentence 1 ratings")),
+          actionButton("displaySettingsApplyInterp", "Apply",
                        style = "background-color: #A8F74A"),
           style = 'margin-top: -2em'
         )
@@ -258,4 +261,4 @@ server <- function(input, output, session){
 }
 
 # Run the app
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, options = list(display.mode = 'showcase'))

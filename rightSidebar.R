@@ -12,7 +12,7 @@ RIGHTSIDEBAR <- rightSidebar(
 ageWidget <- div(
   h5("Age:"),
   checkboxInput("ageNAs", includeNAsText, value = TRUE),
-  tabsetPanel(
+  tabsetPanel(id = "ageTabs",
     tabPanel("range",
              br(),
              sliderInput("ageSlider", label = NULL, 
@@ -22,7 +22,8 @@ ageWidget <- div(
     tabPanel("bins",
              br(),
              checkboxGroupButtons("ageButtons", label = NULL,
-                                  choices = ageBinLevels
+                                  choices = ageBinLevels,
+                                  selected = ageBinLevels
              ))
   )
 )
