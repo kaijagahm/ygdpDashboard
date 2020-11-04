@@ -150,8 +150,23 @@ server <- function(input, output, session){
 
   # RESET FILTERS -----------------------------------------------------------
   observeEvent(input$pointFiltersReset, {
+    ## Reset age filters
     updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
     updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
+    updateCheckboxInput(session, "ageNAs", value = TRUE)
+    
+    ## Reset race filters
+    updatePickerInput(session, "race", selected = raceLevels)
+    updateCheckboxInput(session, "raceNAs", value = TRUE)
+    
+    ## Reset gender filters
+    updatePickerInput(session, "gender", selected = genderLevels)
+    updateCheckboxInput(session, "genderNAs", value = TRUE)
+    
+    ## Reset education filters
+    updatePickerInput(session, "education", selected = educationLevels)
+    updateCheckboxInput(session, "educationNAs", value = TRUE)
+    
   }, ignoreInit = T)
 
   
