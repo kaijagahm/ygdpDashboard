@@ -50,17 +50,19 @@ server <- function(input, output, session){
     reactiveValuesToList(input)[selectorIDs()]
   })
   
-  # RATINGS DATA ------------------------------------------------------------
+  # GET DATA ------------------------------------------------------------
   # Subset the sentences list to include only the chosen sentences.
-  observeEvent(input$sentencesApply|input$pointFiltersApply|input$sentencesReset|input$pointFiltersReset, {
-    if(!is.null(chosenSentences())){
-      chosenData <- reactive({
-        surveyData()[unique(unlist(chosenSentences()))] %>%
+  observeEvent(input$sentencesApply|input$pointFiltersApply, {
+    ### Bind all chosen sentences into a single data frame
+    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
+      chosenData <- reactive({ # chosen data is data from the selected survey.
+        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
           lapply(., as.data.frame) %>%
-          bind_rows(.id = NULL)
+          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
       })
     }
 
+    ### Filter the data frame by demography
     filteredData <- reactive({
       req(chosenData())
       chosenData() %>%
@@ -74,7 +76,7 @@ server <- function(input, output, session){
         {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
         {if(input$educationNAs == F) filter(., !is.na(education)) else .}
     })
-    print(dim(filteredData()))
+    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
   }, ignoreInit = TRUE)
   
   ## Data for sentence options (varies depending on which survey is selected)
@@ -154,7 +156,7 @@ server <- function(input, output, session){
     updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
     updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
     updateCheckboxInput(session, "ageNAs", value = TRUE)
-    
+
     ## Reset race filters
     updatePickerInput(session, "race", selected = raceLevels)
     updateCheckboxInput(session, "raceNAs", value = TRUE)
@@ -166,6 +168,23 @@ server <- function(input, output, session){
     ## Reset education filters
     updatePickerInput(session, "education", selected = educationLevels)
     updateCheckboxInput(session, "educationNAs", value = TRUE)
+    
+    print("reset filters") # filters are reset visually, but inputs don't change. 
+    
+    # Re-filter the data ------------------------------------------------------
+    ### Bind all chosen sentences into a single data frame
+    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
+      chosenData <- reactive({ # chosen data is data from the selected survey.
+        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
+          lapply(., as.data.frame) %>%
+          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
+      })
+    }
+    
+    ### Filter the data frame by demography
+    filteredData <- reactive({chosenData()}) # apply no filters, since we just reset them.
+
+    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
     
   }, ignoreInit = T)
 
@@ -192,8 +211,34 @@ server <- function(input, output, session){
       selector = "div[id*='Controls']", # "Controls", not "controls", to keep sentence1controls
       multiple = T # remove all, not just the first one.
     )
+    print(paste0("active sentences: ", activeSentences()))
     
-    print(activeSentences())
+    # Re-filter the data ------------------------------------------------------
+    ### Bind all chosen sentences into a single data frame
+    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
+      chosenData <- reactive({ # chosen data is data from the selected survey.
+        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
+          lapply(., as.data.frame) %>%
+          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
+      })
+    }
+    
+    ### Filter the data frame by demography
+    filteredData <- reactive({
+      req(chosenData())
+      chosenData() %>%
+        {if(input$ageTabs == "range") filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
+        {if(input$ageTabs == "bins") filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
+        filter((is.na(gender)) | (gender %in% input$gender)) %>%
+        filter((is.na(raceCats)) | (raceCats %in% input$race)) %>%
+        filter((is.na(education)) | (education %in% input$education)) %>%
+        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, we don't need a separate test for which age filter tab is selected.
+        {if(input$genderNAs == F) filter(., !is.na(gender)) else .} %>%
+        {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
+        {if(input$educationNAs == F) filter(., !is.na(education)) else .}
+    })
+    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
+    
   }, ignoreInit = T)
   
   ## Determine what shows up in the right menu bar, and when it opens/closes
