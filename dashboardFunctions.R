@@ -88,8 +88,8 @@ defaultSentence1 <- "I'm after eating ice cream."
 
 
 # Sentence choices, in list
-getSentenceChoices <- function(df){ # function to get a list of sentence choices from a surveyData() data frame.
-  a <- bind_rows(lapply(df, as.data.frame)) %>%
+getSentenceChoices <- function(inputList){ # function to get a list of sentence choices from a surveyData() list of data frames
+  a <- bind_rows(lapply(inputList, as.data.frame)) %>%
     select(constructionName, sentenceText) %>%
     distinct() %>%
     group_by(constructionName) %>%
