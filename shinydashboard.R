@@ -8,7 +8,7 @@ load("data/points/snl.Rda")
 library(reactlog)
 
 # tell shiny to log all reactivity
-reactlog_enable()
+#reactlog_enable()
 
 # Load the functions and libraries
 source("dashboardFunctions.R")
@@ -43,120 +43,133 @@ FOOTER
 
 server <- function(input, output, session){
   # Initialize sentence trackers
-  nSentences <- reactiveVal(1)
-  activeSentences <- reactiveVal(1)
+  nSentences <- reactiveVal(1) # start with 1 sentence
+  activeSentences <- reactiveVal(1) # only sentence 1 active initially
   selectorIDs <- reactive({paste0("sentence", activeSentences())}) # inputId's of the active sentence selectors
   chosenSentences <- reactive({ # list of sentences the user has chosen.
     reactiveValuesToList(input)[selectorIDs()]
   })
   
-  # GET DATA ------------------------------------------------------------
-  # Subset the sentences list to include only the chosen sentences.
-  observeEvent(input$sentencesApply|input$pointFiltersApply, {
-    ### Bind all chosen sentences into a single data frame
-    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
-      chosenData <- reactive({ # chosen data is data from the selected survey.
-        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
-          lapply(., as.data.frame) %>%
-          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
-      })
-    }
 
-    ### Filter the data frame by demography
-    filteredData <- reactive({
-      req(chosenData())
-      chosenData() %>%
-        {if(input$ageTabs == "range") filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
-        {if(input$ageTabs == "bins") filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
-        filter((is.na(gender)) | (gender %in% input$gender)) %>%
-        filter((is.na(raceCats)) | (raceCats %in% input$race)) %>%
-        filter((is.na(education)) | (education %in% input$education)) %>%
-        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, we don't need a separate test for which age filter tab is selected.
-        {if(input$genderNAs == F) filter(., !is.na(gender)) else .} %>%
-        {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
-        {if(input$educationNAs == F) filter(., !is.na(education)) else .}
-    })
-    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
-  }, ignoreInit = TRUE)
-  
-  ## Data for sentence options (varies depending on which survey is selected)
-  surveyData <- reactiveVal(snl[[1]]) # starts with the data from the first survey
-  observeEvent(input$survey, { # when survey input changes, change data
-    name <- paste0("S", input$survey) # paste on an S to create the name
+  # Survey data -------------------------------------------------------------
+  # Varies based on which survey is selected
+  ## Real data, to be fed into reactive expression `dat`.
+  surveyData <- reactiveVal(snl[[1]]) # initial survey data
+  observeEvent(input$sentencesApply, { # When you click the "apply" button
+    name <- paste0("S", input$survey)
     surveyData(snl[[name]]) # update to new survey data
   }, ignoreInit = T)
   
+  ## Dummy data for sentence selector options
+  surveySentencesDataList <- reactive({ # this is basically a replicate of surveyData(), except that `dat` doesn't depend on it. surveySentencesDataList is *only* used to generate choices to populate the sentence selectors. 
+    snl[[paste0("S", input$survey)]]
+  })
   
-  # UPDATE SENTENCE CHOICES -------------------------------------------------
-  observeEvent(surveyData(), { 
-    # Update choices for sentence 1
-    updateSelectizeInput(session,
-                         "sentence1",
-                         label = "Sentence 1:",
-                         choices = getSentenceChoices(surveyData()),
-                         selected = getSentenceChoices(surveyData())[[1]][[1]])
-    
-    # Update choices for all other sentences
-    lapply(activeSentences(), function(x){
-      updateSelectizeInput(session,
-                           paste0("sentence", x),
-                           choices = getSentenceChoices(surveyData()),
-                           selected = getSentenceChoices(surveyData())[[1]][[1]])
-    })
+  
+  # leftRV ------------------------------------------------------------------
+  # reactiveValues object to store selected sentences and selected ratings (from the left panel)
+  leftRV <- reactiveValues(chosenSentences = names(snl[[1]])[1], # initial values
+                           chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
+  
+  observeEvent(input$sentencesApply, {
+    leftRV$chosenSentences <- reactiveValuesToList(input)[names(input) %in% 
+                                                            paste0("sentence", activeSentences())] %>% 
+      unlist() # this is a VECTOR
+    leftRV$chosenRatings <- reactiveValuesToList(input)[names(input) %in% 
+                                                          paste0("ratingsSentence", activeSentences())] # this is a LIST
+  }, ignoreInit = T)
+  
+
+  # rightRV -----------------------------------------------------------------
+  # reactiveValues object to store selected demographic filters (from the right panel)
+  rightRV <- reactiveValues(ageNAs = T,
+                            ageButtons = ageBinLevels,
+                            ageSlider = c(18, 100),
+                            raceNAs = T,
+                            race = raceLevels,
+                            genderNAs = T,
+                            gender = genderLevels,
+                            educationNAs = T,
+                            education = educationLevels)
+  
+  observeEvent(input$pointFiltersApply, {
+    rightRV$ageNAs <- input$ageNAs
+    if(input$ageTabs == "range"){ # when I run this if/else bit in a browser, it keeps giving me "debug" messages. But it seems to be working in the actual app. What the heck?
+      rightRV$ageSlider <- as.numeric(input$ageSlider)
+      rightRV$ageButtons <- NULL
+    }else{
+      rightRV$ageButtons <- as.character(input$ageButtons)
+      rightRV$ageSlider <- NULL
+    }
+    rightRV$raceNAs <- input$raceNAs
+    rightRV$race <- input$race
+    rightRV$genderNAs <- input$genderNAs
+    rightRV$gender <- input$gender
+    rightRV$educationNAs <- input$educationNAs
+    rightRV$education <- input$education
+  }, ignoreInit = T)
+  
+
+  # DATA --------------------------------------------------------------------
+  # The data to use for plotting is a reactive expression that depends on surveyData(), leftRV, and rightRV.
+  dat <- reactive({
+    surveyData()[leftRV$chosenSentences] %>%
+      lapply(., as.data.frame) %>%
+      # Filter by ratings for each sentence
+      map2(., leftRV$chosenRatings, ~filter(..1, rating %in% as.numeric(..2))) %>%
+      bind_rows(.id = NULL) %>% # now we have a single df, filtered by ratings.
+      group_by(responseID) %>% # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
+      filter(n() == nSentences()) %>%
+      ungroup() %>%
+      #Filter by demography
+      {if(is.null(rightRV$ageButtons)) filter(., is.na(age) | age >= rightRV$ageSlider[1] &
+                                                age <= rightRV$ageSlider[2]) else .} %>%
+      {if(is.null(rightRV$ageSlider)) filter(., is.na(ageBin) | ageBin %in% rightRV$ageButtons) else .} %>%
+      filter(is.na(gender) | gender %in% rightRV$gender) %>%
+      filter(is.na(raceCats) | raceCats %in% rightRV$race) %>%
+      filter(is.na(education) | education %in% rightRV$education) %>%
+      {if(rightRV$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, don't need a separate test here for which tab is selected.
+      {if(rightRV$genderNAs == F) filter(., !is.na(gender)) else .} %>%
+      {if(rightRV$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
+      {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
+  })
+  
+  observe({
+    print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
   })
 
-  
-  # ADD SENTENCE ------------------------------------------------------------
-  ### Define function to add UI components
-  addSentenceUI <- function(id, dat){
-    div(id = paste0("sentence", id, "Controls"),
-        div(style = reduceSpacing,
-            selectizeInput(inputId = paste0("sentence", id),
-                           label = paste0("Sentence ", id, ":"),
-                           choices = getSentenceChoices(dat),
-                           selected = getSentenceChoices(dat)[[1]][[1]],
-                           multiple = F),
-            prettyRatingSelector(sentenceNum = as.numeric(id))),
-        div(style = "display:inline-block",
-            prettyJoinSelector(sentenceNum = as.numeric(id))), # join selector and trash in same line
-        #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
-        #icon = icon("trash"),
-        #style = "minimal")),
-        hr()
+  # Reset buttons -----------------------------------------------------------
+  ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
+  observeEvent(input$sentencesReset, {
+    # Reset sentence counters
+    activeSentences(1)
+    nSentences(1)
+    
+    # Reset survey selection
+    updateSelectInput(session, "survey",
+                      selected = str_replace(names(snl), "^S", "")[1])
+    
+    # Reset sentence 1 controls to defaults
+    updateSelectizeInput(session, "sentence1",
+                         selected = getSentenceChoices(surveySentencesDataList())[[1]][[1]]) # default sentence
+    updateCheckboxGroupButtons(session, "ratingsSentence1",
+                               selected = as.character(ratingChoiceValues)) # restore default values (all selected)
+    
+    # Remove additional sentence controls
+    removeUI(
+      selector = "div[id*='Controls']", # "Controls", not "controls", to keep sentence1controls
+      multiple = T # remove all, not just the first one.
     )
-  }
+    print(paste0("active sentences: ", activeSentences()))
+  }, ignoreInit = T)
   
-  ### Observer to activate the function and add UI when requested
-  observeEvent(input$addSentence, { # when addSentence button is clicked
-    insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
-                               paste0("#sentence", max(activeSentences()), "Controls")),
-             where = "afterEnd",
-             ui = addSentenceUI(id = last(activeSentences()) + 1, 
-                                dat = surveyData())) # make a sentence UI with the new number
-    activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
-    nSentences(nSentences() + 1) # update nSentences
-    #print(paste("nsentences = ", nSentences()))
-    print(activeSentences())
-    
-    # Update the color criteria choices
-    updateSelectInput(session, 
-                      inputId = "colorCriteriaPoints", 
-                      choices = c("Selected criteria", 
-                                  paste0("Sentence ", activeSentences(), " ratings"), 
-                                  "Mean rating", 
-                                  "Median rating", 
-                                  "Min rating", 
-                                  "Max rating"))
-  })
-  
-
-  # RESET FILTERS -----------------------------------------------------------
+  ## 2. Right reset button: reset values in NA checkboxes and demographic filter selectors. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$pointFiltersReset, {
     ## Reset age filters
     updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
     updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
     updateCheckboxInput(session, "ageNAs", value = TRUE)
-
+    
     ## Reset race filters
     updatePickerInput(session, "race", selected = raceLevels)
     updateCheckboxInput(session, "raceNAs", value = TRUE)
@@ -169,77 +182,90 @@ server <- function(input, output, session){
     updatePickerInput(session, "education", selected = educationLevels)
     updateCheckboxInput(session, "educationNAs", value = TRUE)
     
-    print("reset filters") # filters are reset visually, but inputs don't change. 
-    
-    # Re-filter the data ------------------------------------------------------
-    ### Bind all chosen sentences into a single data frame
-    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
-      chosenData <- reactive({ # chosen data is data from the selected survey.
-        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
-          lapply(., as.data.frame) %>%
-          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
-      })
-    }
-    
-    ### Filter the data frame by demography
-    filteredData <- reactive({chosenData()}) # apply no filters, since we just reset them.
+    ## Message for debugging
+    print("Demographic filters have been reset. Click 'Apply' again to propagate changes.")
+  })
+  
+  ## 3. Update the age selections when you toggle between the tabs
+  observeEvent(input$ageTabs, {
+      if(input$ageTabs == "range"){
+        updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
+      }else{
+        updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
+      }
+  })
 
-    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
+
+  # Update sentence choices -------------------------------------------------
+  # This observer listens to surveySentencesDataList(), not surveyData(), since the latter is only updated when you click "Apply".
+  observeEvent(surveySentencesDataList(), { 
+    # Update choices for sentence 1
+    updateSelectizeInput(session,
+                         "sentence1",
+                         label = "Sentence 1:",
+                         choices = getSentenceChoices(surveySentencesDataList()),
+                         selected = getSentenceChoices(surveySentencesDataList())[[1]][[1]])
     
-  }, ignoreInit = T)
+    # Update choices for all other sentences
+    lapply(activeSentences(), function(x){
+      updateSelectizeInput(session,
+                           paste0("sentence", x),
+                           choices = getSentenceChoices(surveySentencesDataList()),
+                           selected = getSentenceChoices(surveySentencesDataList())[[1]][[1]])
+    })
+  })
 
   
-  # RESET SENTENCES ------------------------------------------------------------
-  observeEvent(input$sentencesReset, {
-    # Reset sentence counters
-    activeSentences(1)
-    nSentences(1)
-    
-    # Reset survey selection
-    updateSelectInput(session,
-                      "survey",
-                      selected = str_replace(names(snl), "^S", "")[1])
-    
-    # Reset sentence 1 controls to defaults
-    updateSelectizeInput(session, "sentence1", 
-                         selected = getSentenceChoices(surveyData())[[1]][[1]]) # restore default sentence
-    updateCheckboxGroupButtons(session, "ratingsSentence1", 
-                               selected = ratingChoiceValues) #restore default values (all)
-    
-    # Remove additional sentence controls
-    removeUI(
-      selector = "div[id*='Controls']", # "Controls", not "controls", to keep sentence1controls
-      multiple = T # remove all, not just the first one.
+  # Add a sentence ----------------------------------------------------------
+  ### Function definition
+  addSentenceUI <- function(id, dat){
+    div(id = paste0("sentence", id, "Controls"),
+        div(style = reduceSpacing,
+            selectizeInput(inputId = paste0("sentence", id),
+                           label = paste0("Sentence ", id, ":"),
+                           choices = getSentenceChoices(dat),
+                           selected = getSentenceChoices(dat)[[1]][[1]],
+                           multiple = F),
+            prettyRatingSelector(sentenceNum = as.numeric(id))),
+        #div(style = "display:inline-block",
+        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # join selector and trash in same line
+        #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
+        #icon = icon("trash"),
+        #style = "minimal")),
+        br(),
+        hr()
     )
-    print(paste0("active sentences: ", activeSentences()))
-    
-    # Re-filter the data ------------------------------------------------------
-    ### Bind all chosen sentences into a single data frame
-    if(!is.null(chosenSentences())){ # I don't remember why I included this condition.
-      chosenData <- reactive({ # chosen data is data from the selected survey.
-        surveyData()[unique(unlist(chosenSentences()))] %>% # select only the chosen sentences
-          lapply(., as.data.frame) %>%
-          bind_rows(.id = NULL) # bind into one data frame for easier filtering.
-      })
+  }
+  
+  ### Activate function to add UI when button is clicked
+  observeEvent(input$addSentence, { # when addSentence button is clicked
+    insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
+                               paste0("#sentence", max(activeSentences()), "Controls")),
+             where = "afterEnd",
+             ui = addSentenceUI(id = last(activeSentences()) + 1, 
+                                dat = surveySentencesDataList())) # make a sentence UI with the new number
+    activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
+    nSentences(nSentences() + 1) # update nSentences
+    print(activeSentences())
+  })
+  
+
+  # Update color criteria choices -------------------------------------------
+  observeEvent(input$sentencesApply|input$sentencesReset, {
+    if(nSentences() == 1){
+      updateSelectInput(session, "colorCriteriaPoints",
+                        choices = c("Selected criteria", "Sentence 1 ratings"))
+    }else{
+      updateSelectInput(session, "colorCriteriaPoints",
+                        choices = c("Selected criteria",
+                                    paste0("Sentence ", activeSentences(), " ratings"),
+                                    "Mean rating",
+                                    "Median rating",
+                                    "Min rating",
+                                    "Max rating"))
     }
-    
-    ### Filter the data frame by demography
-    filteredData <- reactive({
-      req(chosenData())
-      chosenData() %>%
-        {if(input$ageTabs == "range") filter(., (is.na(age)) | (age > input$ageSlider[1] & age < input$ageSlider[2])) else .} %>%
-        {if(input$ageTabs == "bins") filter(., (is.na(ageBin)) | (ageBin %in% input$ageButtons)) else .} %>%
-        filter((is.na(gender)) | (gender %in% input$gender)) %>%
-        filter((is.na(raceCats)) | (raceCats %in% input$race)) %>%
-        filter((is.na(education)) | (education %in% input$education)) %>%
-        {if(input$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, we don't need a separate test for which age filter tab is selected.
-        {if(input$genderNAs == F) filter(., !is.na(gender)) else .} %>%
-        {if(input$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
-        {if(input$educationNAs == F) filter(., !is.na(education)) else .}
-    })
-    print(paste0("data dimensions: ", paste(dim(filteredData()), collapse = ", ")))
-    
-  }, ignoreInit = T)
+  })
+  
   
   ## Determine what shows up in the right menu bar, and when it opens/closes
   observeEvent(input$sidebarItemExpanded, {
