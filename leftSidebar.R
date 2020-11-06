@@ -25,7 +25,7 @@ LEFTSIDEBAR <- dashboardSidebar(
              div(id = "sentence1controls", div(style = reduceSpacing,
                  selectizeInput("sentence1", "Sentence 1:",
                                 choices = names(snl[[1]]),
-                                selected = names(snl[[1]]), 
+                                selected = names(snl[[1]])[1], 
                                 multiple = F)),
              prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
              hr(),
