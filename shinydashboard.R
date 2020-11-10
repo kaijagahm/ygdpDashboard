@@ -16,7 +16,6 @@ source("dashboardFunctions.R")
 # Load the different parts of the UI, which I've separated out into separate scripts to make them cleaner
 source("header.R")
 source("leftSidebar.R")
-source("body.R")
 source("rightSidebar.R")
 source("footer.R")
 
@@ -30,7 +29,19 @@ ui <- tagList(dashboardPagePlus(
   sidebar = LEFTSIDEBAR,
   
   ## Body (defined in body.R)
-  body = BODY,
+  body = dashboardBody(
+    shinyDashboardThemes( # not sure why we define the theme in the body as opposed to at the beginning of the UI, but okay.
+      theme = "grey_light"
+    ),
+    tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
+      tabItem(
+        tabName = "pointMaps",
+        p("[Insert map here]")),
+      tabItem(
+        tabName = "socialCharts",
+        p("[Insert charts here]"))
+    )
+  ),
   
   ## Right sidebar (defined in rightSidebar.R)
   rightsidebar = RIGHTSIDEBAR
