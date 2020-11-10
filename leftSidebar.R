@@ -11,8 +11,9 @@ LEFTSIDEBAR <- dashboardSidebar(
     id = "leftSidebar", # name of the left sidebar
     
     # POINTS MODE -----------------------------------------------------------
-    menuItem(expandedName = "pointMaps", text = "Point maps",  icon = icon("map"), 
+    convertMenuItem(menuItem(expandedName = "pointMaps", text = "Point maps", tabName = "pointMaps",  icon = icon("map"), 
              startExpanded = TRUE,
+             class = "active",
              # Title
              h4("Select sentences"),
              # Inputs
@@ -34,23 +35,28 @@ LEFTSIDEBAR <- dashboardSidebar(
              actionButton("addSentence", "+ Add a sentence"), # button to add the second sentence
              div(style="display:inline-block", actionButton("sentencesReset", "Reset all", style = "background-color: #4AA8F7")),
              div(style="display:inline-block", actionButton("sentencesApply", "Apply", style = "background-color: #A8F74A"))
-    ),
+    ), 
+    tabName = "pointMaps"), # see convertMenuItem function in dashboardFunctions.R
 
     # INTERPOLATION MODE ------------------------------------------------------
-    menuItem(text = "Interpolation maps", expandedName = "interpolationMaps", 
+    convertMenuItem(menuItem(text = "Interpolation maps", expandedName = "interpolationMaps", 
+             tabName = "interpolationMaps",
              icon = icon("map"),
              startExpanded = FALSE,
              # Title
              h4("Select sentences")
-             ),
+             ), 
+             tabName = "interpolationMaps"), # see convertMenuItem function in dashboardFunctions.R
     
     # SOCIAL VARIABLES MODE ---------------------------------------------------
-    menuItem(text = "Social variables", expandedName = "socialVariables", 
+    convertMenuItem(menuItem(text = "Social variables", expandedName = "socialVariables", 
+             tabName = "socialVariables",
              icon = icon("map"), startExpanded = FALSE,
              div(style = reduceSpacing,
                  selectInput("test", "Test", 
                              choices = c("a", "b", "c", "d", "e"),
                              selected = "a",
-                             multiple = FALSE)))
+                             multiple = FALSE))),
+             tabName = "socialVariables") # see convertMenuItem function in dashboardFunctions.R
   )
 )

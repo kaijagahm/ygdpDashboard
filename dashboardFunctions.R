@@ -9,6 +9,14 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(dashboardthemes)
 
+
+# Tab children function ---------------------------------------------------
+convertMenuItem <- function(mi,tabName) {
+  mi$children[[1]]$attribs['data-toggle']="tab"
+  mi$children[[1]]$attribs['data-value'] = tabName
+  mi
+}
+
 # Named group split function from Romain Francois
 named_group_split <- function(.tbl, ...) {
   grouped <- group_by(.tbl, ...)
