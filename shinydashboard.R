@@ -8,7 +8,7 @@ load("data/points/snl.Rda")
 library(reactlog)
 
 # tell shiny to log all reactivity
-#reactlog_enable()
+reactlog_enable()
 
 # Load the functions and libraries
 source("dashboardFunctions.R")
@@ -119,7 +119,7 @@ server <- function(input, output, session){
       map2(., leftRV$chosenRatings, ~filter(..1, rating %in% as.numeric(..2))) %>%
       bind_rows(.id = NULL) %>% # now we have a single df, filtered by ratings.
       group_by(responseID) %>% # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
-      filter(n() == nSentences()) %>%
+      filter(n() == isolate(nSentences())) %>%
       ungroup() %>%
       #Filter by demography
       {if(is.null(rightRV$ageButtons)) filter(., is.na(age) | age >= rightRV$ageSlider[1] &
@@ -134,7 +134,27 @@ server <- function(input, output, session){
       {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
   })
   
-  observe({
+  # Wide format data (for mapping and coloring)
+  ## Calculated values: to be joined to wide format data
+  calc <- reactive({ 
+    dat() %>%
+      select(responseID, sentenceID, rating) %>%
+      group_by(responseID) %>%
+      summarize(mn = mean(rating, na.rm = T),
+                md = median(rating, na.rm = T),
+                min = min(rating, na.rm = T),
+                max = max(rating, na.rm = T))
+  })
+  
+  ## Wide format data
+  wideDat <- reactive({
+    dat() %>%
+      select(responseID, sentenceID, rating, lat, long) %>%
+      pivot_wider(id_cols = c(responseID, lat, long), names_from = sentenceID, values_from = rating, names_prefix = "SENTENCE_") %>%
+      left_join(calc(), by = "responseID") # join calc
+  })
+  
+  observe({ # whenever dat() changes, print its dimensions.
     print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
   })
 
