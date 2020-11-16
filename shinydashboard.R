@@ -10,7 +10,7 @@ load("data/points/snl.Rda")
 library(reactlog)
 
 # tell shiny to log all reactivity
-reactlog_enable()
+# reactlog_enable()
 
 # Load the functions and libraries
 source("dashboardFunctions.R")
@@ -25,9 +25,6 @@ source("footer.R")
 # TO DO -------------------------------------------------------------------
 # Reset map zoom
 # Jitter lat/long points if they're nearby (can do this in pre-processing)
-# Add popups to the map
-# Sentence that displays on the map on load isn't the correct one--it's different when it initially displays, vs. when you click "reset".
-
 
 ui <- tagList(dashboardPagePlus(
   useShinyjs(),
@@ -91,7 +88,8 @@ server <- function(input, output, session){
   
   # leftRV ------------------------------------------------------------------
   # reactiveValues object to store selected sentences and selected ratings (from the left panel)
-  leftRV <- reactiveValues(chosenSentences = names(snl[[1]])[1], # initial values
+  ## initial values
+  leftRV <- reactiveValues(chosenSentences = defaultSentence1,
                            chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
   
   observeEvent(input$sentencesApply, {
@@ -111,8 +109,7 @@ server <- function(input, output, session){
                             genderNAs = T,
                             gender = genderLevels,
                             educationNAs = T,
-                            education = educationLevels,
-                            colorCriteria = "sentence1")
+                            education = educationLevels)
   
   observeEvent(input$pointFiltersApply, {
     rightRV$ageNAs <- input$ageNAs
@@ -130,23 +127,6 @@ server <- function(input, output, session){
     rightRV$educationNAs <- input$educationNAs
     rightRV$education <- input$education
   }, ignoreInit = T)
-  
-  observeEvent(input$displaySettingsApplyPoints, {
-    if(input$colorCriteriaPoints == "Selected criteria"){
-      rightRV$colorCriteria <- "meetsCriteria"
-    }else if(grepl("ratings", input$colorCriteriaPoints)){
-      rightRV$colorCriteria <- str_replace(input$colorCriteriaPoints, "ratings", "") %>%
-        tolower() %>% str_replace_all(., " ", "")
-    }else if(colorCriteriaPoints == "Mean rating"){
-      rightRV$colorCriteria <- "mn"
-    }else if(colorCriteriaPoints == "Median rating"){
-      rightRV$colorCriteria <- "md"
-    }else if(colorCriteriaPoints == "Min rating"){
-      rightRV$colorCriteria <- "min"
-    }else if(colorCriteriaPoints == "Max rating"){
-      rightRV$colorCriteria <- "max"
-    }
-  })
   
   
   # DATA --------------------------------------------------------------------
@@ -182,7 +162,7 @@ server <- function(input, output, session){
       lapply(., as.data.frame) %>%
       bind_rows(.id = NULL) %>%
       filter(!(responseID %in% dat()$responseID)) %>% # people who were excluded from dat()
-      select(responseID, lat, long) %>%
+      select(responseID, lat, long, label) %>%
       distinct() %>%
       mutate(lat = as.numeric(lat),
              long = as.numeric(long))
@@ -203,13 +183,14 @@ server <- function(input, output, session){
   ## Wide format data
   wideDat <- reactive({
     dat() %>%
-      select(responseID, whichSentence, rating, lat, long) %>%
-      pivot_wider(id_cols = c(responseID, lat, long), 
+      select(responseID, whichSentence, rating, lat, long, label) %>%
+      pivot_wider(id_cols = c(responseID, lat, long, label), 
                   names_from = whichSentence, values_from = rating) %>%
       left_join(calc(), by = "responseID") %>% # join calc
       mutate(lat = as.numeric(lat),
              long = as.numeric(long),
-             meetsCriteria = 5) # so the color choices will work
+             meetsCriteria = 5) %>% # so the color choices will work
+      {if(nSentences() > 1) mutate(., label = paste0(label, " <br> <b>Mean: </b> ", mn, " <br> <b>Median: </b> ", md, " <br> <b>Min: </b> ", min, " <br> <b>Max: </b> ", max))else .}
   })
   
   observe({ # whenever dat() changes, print its dimensions.
@@ -332,15 +313,15 @@ server <- function(input, output, session){
   observeEvent(input$sentencesApply|input$sentencesReset, {
     if(nSentences() == 1){
       updateSelectInput(session, "colorCriteriaPoints",
-                        choices = c("Selected criteria", "Sentence 1 ratings"))
+                        choices = c("Sentence 1 ratings", "Selected criteria"))
     }else{
       updateSelectInput(session, "colorCriteriaPoints",
-                        choices = c("Selected criteria",
-                                    paste0("Sentence ", activeSentences(), " ratings"),
+                        choices = c(paste0("Sentence ", activeSentences(), " ratings"),
                                     "Mean rating",
                                     "Median rating",
                                     "Min rating",
-                                    "Max rating"))
+                                    "Max rating",
+                                    "Selected criteria"))
     }
   })
 
@@ -354,7 +335,7 @@ server <- function(input, output, session){
         rightSidebar(
           ### Point mode filters ------------------------------------------------------
           rightSidebarTabContent(
-            title = "Demographic filters",
+            title = "Filter data",
             id = "pointDemoFilters",
             active = T,
             icon = "sliders",
@@ -383,8 +364,9 @@ server <- function(input, output, session){
                         label = "Color points by:",
                         choices = c("Selected criteria", "Sentence 1 ratings"),
                         multiple = F),
-            actionButton("displaySettingsApplyPoints", "Apply",
-                         style = "background-color: #A8F74A"),
+            div(style="display:inline-block", 
+                actionButton("pointDisplaySettingsApply", "Apply", 
+                             style = "background-color: #A8F74A")),
             style = 'margin-top: -2em'
           )
         )
@@ -433,30 +415,116 @@ server <- function(input, output, session){
       setView(-96, 37.8, 4)
   })
   
-  observeEvent(dat(), {
-    leafletProxy("pointMap") %>%
-      clearMarkers() %>%
-      addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                       fillColor = ~continuousBlueYellow(eval(as.symbol(rightRV$colorCriteria))),
-                       color =~continuousBlueYellow(eval(as.symbol(rightRV$colorCriteria))),
-                       weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.8) %>%
-      # tad: does not meet criteria. Always small and black.
-      addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
-                       fillColor = "black",
-                       color = "black",
-                       weight = 0.5,
-                       radius = 2, opacity = 1,
-                       fillOpacity = 1)
+  # Translate input$colorCriteriaPoints into the names of the columns in wideDat()
+  colorCol <- reactiveVal("sentence1") # initial value is sentence1
+  observeEvent(input$colorCriteriaPoints, { # reassign the value based on the input
+    if(grepl("ratings", input$colorCriteriaPoints)){
+      colorCol(input$colorCriteriaPoints %>% 
+                 str_replace(., "ratings", "") %>% 
+                 tolower() %>% 
+                 str_replace_all(., " ", ""))
+    }else if(input$colorCriteriaPoints == "Selected criteria"){
+      colorCol("meetsCriteria")
+    }else if(input$colorCriteriaPoints == "Mean rating"){
+      colorCol("mn")
+    }else if(input$colorCriteriaPoints == "Median rating"){
+      colorCol("md")
+    }else if(input$colorCriteriaPoints == "Min rating"){
+      colorCol("min")
+    }else if(input$colorCriteriaPoints == "Max rating"){
+      colorCol("max")
+    }
   })
+  
+  # Plot points
+  observeEvent(wideDat(), {
+    if(is.null(input$showCriteriaPoints)){
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.8) %>%
+        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
+                         weight = 0.5,
+                         radius = 2, opacity = 1,
+                         fillOpacity = 1)
+    }else if(!is.null(input$showCriteriaPoints) & input$showCriteriaPoints == T){
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.8) %>%
+        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
+                         weight = 0.5,
+                         radius = 2, opacity = 1,
+                         fillOpacity = 1)
+    }else if(!is.null(input$showCriteriaPoints) & input$showCriteriaPoints == F){
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.8)
+    }
+  })
+  
+  # Change point colors
+  observeEvent(input$pointDisplaySettingsApply, {
+    req(wideDat()) # wideDat() must already exist
+    req(tad()) # tad() must already exist
+    if(input$showCriteriaPoints == T){
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.8) %>%
+        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
+                         weight = 0.5,
+                         radius = 2, opacity = 1,
+                         fillOpacity = 1)
+    }else{
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5,
+                         radius = 7, opacity = 1,
+                         fillOpacity = 0.8)
+    }
+  }, ignoreInit = T)
 
   # observe({
   #   if(length(unique(dat()$sentenceID)) > 1){
   #     browser()
   #   }
   # })
-  
+  # 
   
 }
 
