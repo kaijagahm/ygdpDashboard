@@ -115,5 +115,22 @@ educationLevels <- c("some high school", "high school diploma", "some college", 
 ageBinLevels <- c("18-30", "31-40", "41-50", "51-60", ">61")
 
 
+# COLOR PALETTES --------------------------------------------------------
+discreteBlueYellow <- colorFactor(
+  palette = c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31"),
+  levels = 1:5
+)
+
+continuousBlueYellow <- colorNumeric(
+  palette = c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31"),
+  domain = 1:5
+)
+
+discretePurpleGreen <- colorNumeric(
+  palette = c("#8a31a0", "#6c37d7", "#2569bb", "#04be96", "#13ec4d"),
+  domain = 1:5
+)
+
+
 
 
