@@ -92,7 +92,7 @@ prettyJoinSelector <- function(sentenceNum){
 
 # Sentence choices --------------------------------------------------------
 ## default sentence
-defaultSentence1 <- "I'm after eating ice cream."
+defaultSentence1 <- "I'm after bein' up there for five hours."
 
 
 # Sentence choices, in list
