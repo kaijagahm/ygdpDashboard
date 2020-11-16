@@ -21,6 +21,14 @@ source("leftSidebar.R")
 source("rightSidebar.R")
 source("footer.R")
 
+
+# TO DO -------------------------------------------------------------------
+# Reset map zoom
+# Jitter lat/long points if they're nearby (can do this in pre-processing)
+# Add popups to the map
+# Sentence that displays on the map on load isn't the correct one--it's different when it initially displays, vs. when you click "reset".
+
+
 ui <- tagList(dashboardPagePlus(
   useShinyjs(),
   
@@ -33,7 +41,7 @@ ui <- tagList(dashboardPagePlus(
   ## Body (defined in body.R)
   body = dashboardBody(
     shinyDashboardThemes( # why is theme defined in body, not at top?
-      theme = "grey_light"
+      theme = "grey_dark"
     ),
     tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
       tabItem(tabName = "pointMaps",
@@ -61,9 +69,8 @@ server <- function(input, output, session){
   # Initialize sentence trackers
   nSentences <- reactiveVal(1) # start with 1 sentence
   activeSentences <- reactiveVal(1) # only sentence 1 active initially
-  selectorIDs <- reactive({paste0("sentence", activeSentences())}) # inputId's of the active sentence selectors
   chosenSentences <- reactive({ # list of sentences the user has chosen.
-    reactiveValuesToList(input)[selectorIDs()]
+    reactiveValuesToList(input)[paste0("sentence", activeSentences())]
   })
   
   
@@ -88,11 +95,9 @@ server <- function(input, output, session){
                            chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
   
   observeEvent(input$sentencesApply, {
-    leftRV$chosenSentences <- reactiveValuesToList(input)[names(input) %in% 
-                                                            paste0("sentence", activeSentences())] %>% 
+    leftRV$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", activeSentences())] %>% 
       unlist() # this is a VECTOR
-    leftRV$chosenRatings <- reactiveValuesToList(input)[names(input) %in% 
-                                                          paste0("ratingsSentence", activeSentences())] # this is a LIST
+    leftRV$chosenRatings <- reactiveValuesToList(input)[paste0("ratingsSentence", activeSentences())] # this is a LIST
   }, ignoreInit = T)
   
   
@@ -106,7 +111,8 @@ server <- function(input, output, session){
                             genderNAs = T,
                             gender = genderLevels,
                             educationNAs = T,
-                            education = educationLevels)
+                            education = educationLevels,
+                            colorCriteria = "sentence1")
   
   observeEvent(input$pointFiltersApply, {
     rightRV$ageNAs <- input$ageNAs
@@ -125,15 +131,34 @@ server <- function(input, output, session){
     rightRV$education <- input$education
   }, ignoreInit = T)
   
+  observeEvent(input$displaySettingsApplyPoints, {
+    if(input$colorCriteriaPoints == "Selected criteria"){
+      rightRV$colorCriteria <- "meetsCriteria"
+    }else if(grepl("ratings", input$colorCriteriaPoints)){
+      rightRV$colorCriteria <- str_replace(input$colorCriteriaPoints, "ratings", "") %>%
+        tolower() %>% str_replace_all(., " ", "")
+    }else if(colorCriteriaPoints == "Mean rating"){
+      rightRV$colorCriteria <- "mn"
+    }else if(colorCriteriaPoints == "Median rating"){
+      rightRV$colorCriteria <- "md"
+    }else if(colorCriteriaPoints == "Min rating"){
+      rightRV$colorCriteria <- "min"
+    }else if(colorCriteriaPoints == "Max rating"){
+      rightRV$colorCriteria <- "max"
+    }
+  })
+  
   
   # DATA --------------------------------------------------------------------
   # The data to use for plotting is a reactive expression that depends on surveyData(), leftRV, and rightRV.
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
+      map2(., 1:length(.), ~mutate(..1, whichSentence = paste0("sentence", ..2))) %>%
       # Filter by ratings for each sentence
       map2(., leftRV$chosenRatings, ~filter(..1, rating %in% as.numeric(..2))) %>%
       bind_rows(.id = NULL) %>% # now we have a single df, filtered by ratings.
+      mutate(rating = as.numeric(as.character(rating))) %>%
       group_by(responseID) %>% # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
       filter(n() == isolate(nSentences())) %>%
       ungroup() %>%
@@ -150,11 +175,24 @@ server <- function(input, output, session){
       {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
   })
   
+  # The data that *doesn't* meet the criteria: all the responseID's except for the ones included in dat() (this is just a shortcut so I don't have to re-write all these filters backwards.)
+  tad <- reactive({
+    req(dat())
+    surveyData()[leftRV$chosenSentences] %>%
+      lapply(., as.data.frame) %>%
+      bind_rows(.id = NULL) %>%
+      filter(!(responseID %in% dat()$responseID)) %>% # people who were excluded from dat()
+      select(responseID, lat, long) %>%
+      distinct() %>%
+      mutate(lat = as.numeric(lat),
+             long = as.numeric(long))
+  })
+  
   # Wide format data (for mapping and coloring)
   ## Calculated values: to be joined to wide format data
   calc <- reactive({ 
     dat() %>%
-      select(responseID, sentenceID, rating) %>%
+      select(responseID, whichSentence, rating) %>%
       group_by(responseID) %>%
       summarize(mn = mean(rating, na.rm = T),
                 md = median(rating, na.rm = T),
@@ -165,11 +203,13 @@ server <- function(input, output, session){
   ## Wide format data
   wideDat <- reactive({
     dat() %>%
-      select(responseID, sentenceID, rating, lat, long) %>%
-      pivot_wider(id_cols = c(responseID, lat, long), names_from = sentenceID, values_from = rating, names_prefix = "SENTENCE_") %>%
+      select(responseID, whichSentence, rating, lat, long) %>%
+      pivot_wider(id_cols = c(responseID, lat, long), 
+                  names_from = whichSentence, values_from = rating) %>%
       left_join(calc(), by = "responseID") %>% # join calc
       mutate(lat = as.numeric(lat),
-             long = as.numeric(long))
+             long = as.numeric(long),
+             meetsCriteria = 5) # so the color choices will work
   })
   
   observe({ # whenever dat() changes, print its dimensions.
@@ -303,8 +343,7 @@ server <- function(input, output, session){
                                     "Max rating"))
     }
   })
-  
-  
+
   
   # Right menu bar controls -------------------------------------------------
   observeEvent(input$sidebarItemExpanded, {
@@ -323,6 +362,7 @@ server <- function(input, output, session){
             raceWidget,
             genderWidget, # defined in rightSidebar.R
             educationWidget,
+            
             div(style="display:inline-block", 
                 actionButton("pointFiltersReset", "Reset", 
                              style = "background-color: #4AA8F7")),
@@ -386,23 +426,40 @@ server <- function(input, output, session){
   
   # Point map output --------------------------------------------------------
   output$pointMap <- renderLeaflet({
-    leaflet(wideDat()) %>%
+    leaflet() %>%
       addProviderTiles(
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
-      setView(-96, 37.8, 4) %>%
-      addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~ long,
-                       #popup = ~label,
-                       #fillColor = ~rev(pal(Judgment)), 
+      setView(-96, 37.8, 4)
+  })
+  
+  observeEvent(dat(), {
+    leafletProxy("pointMap") %>%
+      clearMarkers() %>%
+      addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                       fillColor = ~continuousBlueYellow(eval(as.symbol(rightRV$colorCriteria))),
+                       color =~continuousBlueYellow(eval(as.symbol(rightRV$colorCriteria))),
+                       weight = 0.5,
+                       radius = 7, opacity = 1,
+                       fillOpacity = 0.8) %>%
+      # tad: does not meet criteria. Always small and black.
+      addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
                        fillColor = "black",
                        color = "black",
                        weight = 0.5,
-                       radius = 7, opacity = 1,
-                       fillOpacity = 0.5)
+                       radius = 2, opacity = 1,
+                       fillOpacity = 1)
   })
+
+  # observe({
+  #   if(length(unique(dat()$sentenceID)) > 1){
+  #     browser()
+  #   }
+  # })
   
   
 }
+
 
 # Run the app
 shinyApp(ui = ui, server = server, options = list(display.mode = 'showcase'))
