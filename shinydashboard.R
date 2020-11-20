@@ -7,7 +7,10 @@ library(stringr)
 library(leaflet)
 library(leaflet.extras)
 load("data/points/snl.Rda")
-library(reactlog)
+load("data/interpolations/interpListLarge.Rda")
+# load("data/interpolations/interpListMedium.Rda")
+# load("data/interpolations/interpListSmall.Rda")
+# library(reactlog)
 
 # tell shiny to log all reactivity
 # reactlog_enable()
@@ -22,9 +25,13 @@ source("rightSidebar.R")
 source("footer.R")
 
 
-# TO DO -------------------------------------------------------------------
-# Reset map zoom
+# To do
 # Jitter lat/long points if they're nearby (can do this in pre-processing)
+# Add additional label information to the points that don't meet the criteria.
+# Fix bugs:
+#   Sometimes, but not always, when you select survey 9 or survey 7 there's an error.
+#   Sometimes there's an error when the filters are set a certain way, such as moving the age slider up to ~90-100.
+#   I suspect this has something to do with the data having 0 rows.
 
 ui <- tagList(dashboardPagePlus(
   useShinyjs(),
@@ -42,7 +49,9 @@ ui <- tagList(dashboardPagePlus(
     ),
     tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
       tabItem(tabName = "pointMaps",
-              leafletOutput("pointMap")
+              leafletOutput("pointMap", height = "525px"),
+              br(),
+              uiOutput("pointMapResetZoom")
       ),
       tabItem(tabName = "interpolationMaps",
               p("STUFF")
@@ -63,15 +72,16 @@ FOOTER
 )
 
 server <- function(input, output, session){
-  # Initialize sentence trackers
+
+# POINTS MODE (PTS) -------------------------------------------------------
+  # (PTS) sentence counters -------------------------------------------------
   nSentences <- reactiveVal(1) # start with 1 sentence
   activeSentences <- reactiveVal(1) # only sentence 1 active initially
   chosenSentences <- reactive({ # list of sentences the user has chosen.
     reactiveValuesToList(input)[paste0("sentence", activeSentences())]
   })
   
-  
-  # Survey data -------------------------------------------------------------
+  # (PTS) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `dat`.
   surveyData <- reactiveVal(snl[[1]]) # initial survey data
@@ -86,7 +96,7 @@ server <- function(input, output, session){
   })
   
   
-  # leftRV ------------------------------------------------------------------
+  # (PTS) leftRV ------------------------------------------------------------------
   # reactiveValues object to store selected sentences and selected ratings (from the left panel)
   ## initial values
   leftRV <- reactiveValues(chosenSentences = defaultSentence1,
@@ -99,7 +109,7 @@ server <- function(input, output, session){
   }, ignoreInit = T)
   
   
-  # rightRV -----------------------------------------------------------------
+  # (PTS) rightRV -----------------------------------------------------------------
   # reactiveValues object to store selected demographic filters (from the right panel)
   rightRV <- reactiveValues(ageNAs = T,
                             ageButtons = ageBinLevels,
@@ -129,7 +139,7 @@ server <- function(input, output, session){
   }, ignoreInit = T)
   
   
-  # DATA --------------------------------------------------------------------
+  # (PTS) Data --------------------------------------------------------------------
   # The data to use for plotting is a reactive expression that depends on surveyData(), leftRV, and rightRV.
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
@@ -190,14 +200,32 @@ server <- function(input, output, session){
       mutate(lat = as.numeric(lat),
              long = as.numeric(long),
              meetsCriteria = 5) %>% # so the color choices will work
-      {if(nSentences() > 1) mutate(., label = paste0(label, " <br> <b>Mean: </b> ", mn, " <br> <b>Median: </b> ", md, " <br> <b>Min: </b> ", min, " <br> <b>Max: </b> ", max))else .}
+      {if(nSentences() > 1) mutate(., label = paste0(label, " <br> <b>Mean: </b> ", round(mn, 2), " <br> <b>Median: </b> ", md, " <br> <b>Min: </b> ", min, " <br> <b>Max: </b> ", max))else .} %>%
+      upgradeLabels(.)
   })
   
   observe({ # whenever dat() changes, print its dimensions.
     print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
   })
   
-  # Reset buttons -----------------------------------------------------------
+  # (PTS) Map ---------------------------------------------------------------
+  output$pointMap <- renderLeaflet({
+    leaflet() %>%
+      addProviderTiles(
+        providers$CartoDB.Positron,
+        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
+      setView(-96, 37.8, 4)
+  })
+  
+  
+  # (PTS) map zoom ----------------------------------------------------------
+  ## Define reset button
+  output$pointMapResetZoom <- renderUI({
+    div(style="display:inline-block", 
+        actionButton("resetPointMapZoom", "Reset map view", style = "background-color: #4AA8F7"))
+  })
+  
+  # (PTS) Reset buttons -----------------------------------------------------------
   ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$sentencesReset, {
     # Reset sentence counters
@@ -255,7 +283,7 @@ server <- function(input, output, session){
   })
   
   
-  # Update sentence choices -------------------------------------------------
+  # (PTS) Update sentence choices -------------------------------------------------
   # This observer listens to surveySentencesDataList(), not surveyData(), since the latter is only updated when you click "Apply".
   observeEvent(surveySentencesDataList(), { 
     # Update choices for sentence 1
@@ -275,7 +303,7 @@ server <- function(input, output, session){
   })
   
   
-  # Add a sentence ----------------------------------------------------------
+  # (PTS) Add a sentence ----------------------------------------------------------
   ### Function definition
   addSentenceUI <- function(id, dat){
     div(id = paste0("sentence", id, "Controls"),
@@ -287,9 +315,9 @@ server <- function(input, output, session){
                            multiple = F),
             prettyRatingSelector(sentenceNum = as.numeric(id))),
         #div(style = "display:inline-block",
-        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # join selector and trash in same line
+        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
         #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
-        #icon = icon("trash"),
+        #icon = icon("trash"), # individual sentence trash buttons: not implemented
         #style = "minimal")),
         br(),
         hr()
@@ -309,7 +337,7 @@ server <- function(input, output, session){
   })
   
   
-  # Update color criteria choices -------------------------------------------
+  # (PTS) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApply|input$sentencesReset, {
     if(nSentences() == 1){
       updateSelectInput(session, "colorCriteriaPoints",
@@ -325,15 +353,15 @@ server <- function(input, output, session){
     }
   })
 
-  
-  # Right menu bar controls -------------------------------------------------
+
+  # RIGHT MENU BAR CONTROLS -------------------------------------------------
   observeEvent(input$sidebarItemExpanded, {
     if(req(input$sidebarItemExpanded) == "pointMaps"){
       message("Point maps view has been selected.")
       shinyjs::addClass(selector = "body", class = "control-sidebar-open") #open the "control sidebar" (righthand sidebar) when the menu tab is selected
       output$rightSidebar <- renderUI({
         rightSidebar(
-          ### Point mode filters ------------------------------------------------------
+          ### (PTS) Demographic filters
           rightSidebarTabContent(
             title = "Filter data",
             id = "pointDemoFilters",
@@ -352,7 +380,7 @@ server <- function(input, output, session){
                              style = "background-color: #A8F74A")),
             style = 'margin-top: -2em'
           ),
-          ### Point mode display settings ---------------------------------------------
+          ### (PTS) Display settings
           rightSidebarTabContent(
             title = "Display settings",
             id = "pointDisplaySettings",
@@ -375,7 +403,7 @@ server <- function(input, output, session){
       message("Interpolation map view has been selected.")
       shinyjs::addClass(selector = "body", class = "control-sidebar-open")
       output$rightSidebar <- renderUI({
-        # Interpolation mode display settings -------------------------------------
+        # Interpolation mode display settings
         rightSidebarTabContent(
           title = "Display settings",
           id = "interpolationDisplaySettings",
@@ -395,7 +423,7 @@ server <- function(input, output, session){
       message("Social variables view has been selected.")
       shinyjs::addClass(selector = "body", class = "control-sidebar-open")
       output$rightSidebar <- renderUI({
-        # Social variables display settings ---------------------------------------
+        # Social variables display settings
         rightSidebarTabContent(
           id = "socialVariablesFilters",
           title = "Filters for social variables view",
@@ -406,12 +434,12 @@ server <- function(input, output, session){
     }
   })
   
-  # Point map output --------------------------------------------------------
-  output$pointMap <- renderLeaflet({
-    leaflet() %>%
-      addProviderTiles(
-        providers$CartoDB.Positron,
-        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
+
+  
+  ## When reset button is clicked, reset the map zoom
+  observe({
+    input$resetPointMapZoom
+    leafletProxy("pointMap") %>% 
       setView(-96, 37.8, 4)
   })
   
@@ -438,6 +466,9 @@ server <- function(input, output, session){
   
   # Plot points
   observeEvent(wideDat(), {
+    # if(!is.null(input$pointFiltersApply)){
+    #   browser()
+    # }
     if(is.null(input$showCriteriaPoints)){
       leafletProxy("pointMap") %>%
         clearMarkers() %>%
@@ -484,6 +515,12 @@ server <- function(input, output, session){
                          fillOpacity = 0.8)
     }
   })
+  
+  # observe({
+  #   if(input$survey == "7"){
+  #     browser()
+  #   }
+  # })
   
   # Change point colors
   observeEvent(input$pointDisplaySettingsApply, {
