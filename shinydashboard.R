@@ -72,8 +72,8 @@ FOOTER
 )
 
 server <- function(input, output, session){
-
-# POINTS MODE (PTS) -------------------------------------------------------
+  
+  # POINTS MODE (PTS) -------------------------------------------------------
   # (PTS) sentence counters -------------------------------------------------
   nSentences <- reactiveVal(1) # start with 1 sentence
   activeSentences <- reactiveVal(1) # only sentence 1 active initially
@@ -352,8 +352,50 @@ server <- function(input, output, session){
                                     "Selected criteria"))
     }
   })
-
-
+  
+  # INTERPOLATION MODE ------------------------------------------------------
+  # (INT) sentence counters -------------------------------------------------
+  nSentencesI <- reactiveVal(1) # start with 1 sentence
+  activeSentencesI <- reactiveVal(1) # only sentence 1 active initially
+  chosenSentencesI <- reactive({ # list of sentences the user has chosen.
+    reactiveValuesToList(input)[paste0("sentence", activeSentencesI())]
+  })
+  
+  # (INT) Survey data -------------------------------------------------------------
+  # Varies based on which survey is selected
+  ## Real data, to be fed into reactive expression `datI`.
+  surveyDataI <- reactiveVal(snl[[1]]) # initial survey data
+  observeEvent(input$sentencesApplyI, { # When you click the "apply" button
+    name <- paste0("S", input$surveyI)
+    surveyDataI(snl[[name]]) # update to new survey data
+  }, ignoreInit = T)
+  
+  # (INT) leftRVI ------------------------------------------------------------------
+  # reactiveValues object to store selected sentences from the left panel
+  ## initial values
+  leftRVI <- reactiveValues(chosenSentences = defaultSentence1)
+  
+  ## observer to change vals
+  observeEvent(input$sentencesApplyI, {
+    leftRVI$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", 
+                                                                  activeSentencesI())] %>% 
+      unlist() # this is a VECTOR
+    # we don't include chosen rating for interpolation mode
+  }, ignoreInit = T)
+  
+  # Note: there's no (INT) rightRVI section because we don't need demographic filters for interpolation mode.
+  
+  # (INT) Data --------------------------------------------------------------------
+  # Data for plotting is a reactive expression that depends on surveyDataI() and leftRVI
+  datI <- reactive({
+    interpListLarge[leftRVI$chosenSentences]
+    # We'll do more things to this later.
+  })
+  
+  
+  
+  
+  
   # RIGHT MENU BAR CONTROLS -------------------------------------------------
   observeEvent(input$sidebarItemExpanded, {
     if(req(input$sidebarItemExpanded) == "pointMaps"){
@@ -434,7 +476,7 @@ server <- function(input, output, session){
     }
   })
   
-
+  
   
   ## When reset button is clicked, reset the map zoom
   observe({
@@ -555,7 +597,7 @@ server <- function(input, output, session){
                          fillOpacity = 0.8)
     }
   }, ignoreInit = T)
-
+  
   # observe({
   #   if(length(unique(dat()$sentenceID)) > 1){
   #     browser()
