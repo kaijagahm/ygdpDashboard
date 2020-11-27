@@ -44,7 +44,28 @@ LEFTSIDEBAR <- dashboardSidebar(
              icon = icon("map"),
              startExpanded = FALSE,
              # Title
-             h4("Select sentences")
+             h4("Select sentences"),
+             # Inputs
+             div(style = reduceSpacing,
+                 selectInput("surveyI", "Survey", 
+                             choices = str_replace(names(snl), "^S", ""),
+                             selected = str_replace(names(snl), "^S", "")[1],
+                             multiple = FALSE)),
+             ### Sentence selector
+             div(id = "sentence1controlsI", div(style = reduceSpacing,
+                                               selectizeInput("sentence1I", "Sentence 1:",
+                                                              choices = names(snl[[1]]),
+                                                              selected = defaultSentence1, 
+                                                              multiple = F)),
+                 br(),
+                 hr(),
+                 br()
+             ), # end of div "sentence1controlsI"
+             actionButton("addSentenceI", "+ Add a sentence"), # button to add the second sentence
+             div(style = "display:inline-block", actionButton("sentencesResetI", "Reset all", 
+                                                            style = "background-color: #4AA8F7")),
+             div(style = "display:inline-block", actionButton("sentencesApplyI", "Apply", 
+                                                              style = "background-color: #A8F74A"))
              ), 
              tabName = "interpolationMaps"), # see convertMenuItem function in dashboardFunctions.R
     
