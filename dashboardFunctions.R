@@ -107,6 +107,19 @@ getSentenceChoices <- function(inputList){ # function to get a list of sentence 
   return(a)
 }
 
+getSentenceChoicesI <- function(inputList, surveyIDString, surveySentencesTable){
+  sentences <- names(inputList)
+  a <- surveySentencesTable %>%
+    filter(sentenceText %in% sentences, 
+           surveyID == surveyIDString) %>%
+    select(constructionName, sentenceText) %>%
+    distinct() %>%
+    group_by(constructionName) %>%
+    named_group_split(constructionName) %>%
+    lapply(., function(x) x %>% pull(sentenceText)) %>%
+    lapply(., as.list)
+  return(a)
+}
 
 # Factor levels -----------------------------------------------------------
 genderLevels <- c("female", "male", "nonbinary/other" = "other")
@@ -132,5 +145,15 @@ discretePurpleGreen <- colorNumeric(
 )
 
 
-
+# Bo's labeling function --------------------------------------------------
+upgradeLabels <- function(x) {
+  y <- x[, grepl("sentence", names(x))] # get just the `sentence` cols
+  y_names <- paste0("<b>", names(y), ": </b>") # extract names and add bold html formatting
+  y_names <- str_replace(y_names, "sentence", "Sentence ") # "sentence1" --> "Sentence 1"
+  x$temp <- apply(y, 1, function(x) paste0(y_names, " ", x, " <br>", collapse = " ")) # paste together the sentence names and their ratings
+  x$temp <- paste0("<br> ", x$temp) # add initial line break to separate the sentence ratings from the rest of the label text
+  x$label <- paste(x$label, x$temp)
+  x <- x %>% select(-temp)
+  return(x)
+}
 
