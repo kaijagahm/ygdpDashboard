@@ -10,6 +10,7 @@ load("data/points/snl.Rda")
 load("data/interpolations/interpListLarge.Rda")
 # load("data/interpolations/interpListMedium.Rda")
 # load("data/interpolations/interpListSmall.Rda")
+load("data/interpolations/surveySentencesTable.Rda")
 # library(reactlog)
 
 # tell shiny to log all reactivity
@@ -42,7 +43,8 @@ ui <- tagList(dashboardPagePlus(
   ## Left sidebar and menu options (defined in leftSidebar.R)
   sidebar = LEFTSIDEBAR,
   
-  ## Body (defined in body.R)
+  
+  # BODY --------------------------------------------------------------------
   body = dashboardBody(
     shinyDashboardThemes( # why is theme defined in body, not at top?
       theme = "grey_dark"
@@ -54,7 +56,9 @@ ui <- tagList(dashboardPagePlus(
               uiOutput("pointMapResetZoom")
       ),
       tabItem(tabName = "interpolationMaps",
-              p("STUFF")
+              leafletOutput("interpolationMap", height = "525px"),
+              br(),
+              uiOutput("interpolationMapResetZoom")
       ),
       tabItem(tabName = "socialVariables",
               p("[Insert charts here]")
@@ -225,6 +229,39 @@ server <- function(input, output, session){
         actionButton("resetPointMapZoom", "Reset map view", style = "background-color: #4AA8F7"))
   })
   
+  # (PTS) Add a sentence ----------------------------------------------------------
+  ### Function definition
+  addSentenceUI <- function(id, dat){
+    div(id = paste0("sentence", id, "Controls"),
+        div(style = reduceSpacing,
+            selectizeInput(inputId = paste0("sentence", id),
+                           label = paste0("Sentence ", id, ":"),
+                           choices = getSentenceChoices(dat),
+                           selected = getSentenceChoices(dat)[[1]][[1]],
+                           multiple = F),
+            prettyRatingSelector(sentenceNum = as.numeric(id))),
+        #div(style = "display:inline-block",
+        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
+        #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
+        #icon = icon("trash"), # individual sentence trash buttons: not implemented
+        #style = "minimal")),
+        br(),
+        hr()
+    )
+  }
+  
+  ### Activate function to add UI when button is clicked
+  observeEvent(input$addSentence, { # when addSentence button is clicked
+    insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
+                               paste0("#sentence", max(activeSentences()), "Controls")),
+             where = "afterEnd",
+             ui = addSentenceUI(id = last(activeSentences()) + 1, 
+                                dat = surveySentencesDataList())) # make a sentence UI with the new number
+    activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
+    nSentences(nSentences() + 1) # update nSentences
+    print(activeSentences())
+  })
+  
   # (PTS) Reset buttons -----------------------------------------------------------
   ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$sentencesReset, {
@@ -303,38 +340,7 @@ server <- function(input, output, session){
   })
   
   
-  # (PTS) Add a sentence ----------------------------------------------------------
-  ### Function definition
-  addSentenceUI <- function(id, dat){
-    div(id = paste0("sentence", id, "Controls"),
-        div(style = reduceSpacing,
-            selectizeInput(inputId = paste0("sentence", id),
-                           label = paste0("Sentence ", id, ":"),
-                           choices = getSentenceChoices(dat),
-                           selected = getSentenceChoices(dat)[[1]][[1]],
-                           multiple = F),
-            prettyRatingSelector(sentenceNum = as.numeric(id))),
-        #div(style = "display:inline-block",
-        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
-        #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
-        #icon = icon("trash"), # individual sentence trash buttons: not implemented
-        #style = "minimal")),
-        br(),
-        hr()
-    )
-  }
   
-  ### Activate function to add UI when button is clicked
-  observeEvent(input$addSentence, { # when addSentence button is clicked
-    insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
-                               paste0("#sentence", max(activeSentences()), "Controls")),
-             where = "afterEnd",
-             ui = addSentenceUI(id = last(activeSentences()) + 1, 
-                                dat = surveySentencesDataList())) # make a sentence UI with the new number
-    activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
-    nSentences(nSentences() + 1) # update nSentences
-    print(activeSentences())
-  })
   
   
   # (PTS) Update color criteria choices -------------------------------------------
@@ -358,43 +364,176 @@ server <- function(input, output, session){
   nSentencesI <- reactiveVal(1) # start with 1 sentence
   activeSentencesI <- reactiveVal(1) # only sentence 1 active initially
   chosenSentencesI <- reactive({ # list of sentences the user has chosen.
-    reactiveValuesToList(input)[paste0("sentence", activeSentencesI())]
-  })
+    reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")]
+  }) # selectors take form of "sentence1I" ### XXX make sure this is reflected in the "Add a sentence" code
   
   # (INT) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `datI`.
-  surveyDataI <- reactiveVal(snl[[1]]) # initial survey data
+  surveyDataI <- reactiveVal(interpListLarge[names(interpListLarge) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]]) # initial interp list data for the chosen survey #XXX
   observeEvent(input$sentencesApplyI, { # When you click the "apply" button
     name <- paste0("S", input$surveyI)
-    surveyDataI(snl[[name]]) # update to new survey data
-  }, ignoreInit = T)
+    surveyDataI(interpListLarge[names(interpListLarge) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
+  }, 
+  ignoreInit = T)
+  
+  ## Dummy data for sentence selector options
+  surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
+    interpListLarge[names(interpListLarge) %in%
+                      surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
+                                                          paste0("S", input$surveyI)]]
+  })
   
   # (INT) leftRVI ------------------------------------------------------------------
-  # reactiveValues object to store selected sentences from the left panel
+  # reactiveValues object to store selected sentences (from left panel)
   ## initial values
   leftRVI <- reactiveValues(chosenSentences = defaultSentence1)
   
-  ## observer to change vals
   observeEvent(input$sentencesApplyI, {
-    leftRVI$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", 
-                                                                  activeSentencesI())] %>% 
+    leftRVI$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")] %>% # e.g. "sentence1I"
       unlist() # this is a VECTOR
-    # we don't include chosen rating for interpolation mode
   }, ignoreInit = T)
   
-  # Note: there's no (INT) rightRVI section because we don't need demographic filters for interpolation mode.
-  
-  # (INT) Data --------------------------------------------------------------------
-  # Data for plotting is a reactive expression that depends on surveyDataI() and leftRVI
+  # (INT) Data --------------------------------------------------------------
   datI <- reactive({
-    interpListLarge[leftRVI$chosenSentences]
-    # We'll do more things to this later.
+    surveyDataI()[leftRVI$chosenSentences]
+  })
+  
+  # (INT) Map ---------------------------------------------------------------
+  output$interpolationMap <- renderLeaflet({
+    leaflet() %>%
+      addProviderTiles(
+        providers$CartoDB.Positron,
+        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
+      setView(-96, 37.8, 4)
+  })
+  
+  # (INT) map zoom ----------------------------------------------------------
+  ## Define reset button
+  output$interpolationMapResetZoom <- renderUI({
+    div(style="display:inline-block", 
+        actionButton("resetInterpolationMapZoom", 
+                     "Reset map view", style = "background-color: #4AA8F7"))
+  })
+  
+  # (INT) Add a sentence ----------------------------------------------------------
+  ### Function definition
+  addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
+    div(id = paste0("sentence", id, "Controls", "I"),
+        div(style = reduceSpacing,
+            selectizeInput(inputId = paste0("sentence", id, "I"),
+                           label = paste0("Sentence ", id, ":"),
+                           choices = getSentenceChoicesI(inputList,
+                                                         surveyIDString,
+                                                         surveySentencesTable),
+                           selected = getSentenceChoicesI(inputList, 
+                                                          surveyIDString,
+                                                          surveySentencesTable)[[1]][[1]],
+                           multiple = F)),
+        br(),
+        hr()
+    )
+  }
+  
+  ### Activate function to add UI when button is clicked
+  observeEvent(input$addSentenceI, { # when addSentenceI button is clicked
+    insertUI(selector = ifelse(nSentencesI() == 1, "#sentence1controlsI", # XXX check that this exists
+                               paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
+             where = "afterEnd",
+             ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
+                                inputList = surveySentencesDataListI(), 
+                                surveyIDString = paste0("S", input$surveyI),
+                                surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
+    activeSentencesI(c(activeSentencesI(), last(activeSentencesI()) + 1)) # update activeSentencesI
+    nSentencesI(nSentencesI() + 1) # update nSentencesI
+    print(paste("Number of active sentences:", nSentencesI()))
+  })
+  
+  # (INT) Reset button -----------------------------------------------------------
+  ## Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset survey selection, reset sentence counters.
+  ## No right reset button for interpolation mode.
+  observeEvent(input$sentencesResetI, {
+    # Reset sentence counters
+    activeSentencesI(1)
+    nSentencesI(1)
+    
+    # Reset survey selection
+    updateSelectInput(session, "surveyI",
+                      selected = str_replace(names(snl), "^S", "")[1]) # reset to default
+    
+    # Reset sentence 1 controls to defaults
+    updateSelectizeInput(session, "sentence1I",
+                         selected = defaultSentence1) # default sentence
+    
+    # Remove additional sentence controls
+    removeUI(
+      selector = "div[id*='ControlsI']", # "ControlsI", not "controlsI", to keep sentence1controlsI
+      multiple = T # remove all, not just the first one.
+    )
+    print(paste0("active sentences: ", activeSentencesI()))
+  }, ignoreInit = T)
+  
+  # (INT) Update color criteria choices -------------------------------------------
+  observeEvent(input$sentencesApplyI|input$sentencesResetI, {
+    if(nSentencesI() == 1){
+      updateSelectInput(session, "colorCriteriaInterpolation",
+                        choices = c("Sentence 1 ratings"))
+    }else if(nSentencesI() == 2){
+      updateSelectInput(session, "colorCriteriaInterpolation",
+                        choices = c("Sentence 1 ratings",
+                                    "Sentence 2 ratings",
+                                    "Difference (1-2)",
+                                    "Mean rating",
+                                    "Min rating",
+                                    "Max rating"))
+    }else if(nSentencesI() == 3){
+      updateSelectInput(session, "colorCriteriaInterpolation",
+                        choices = c("Sentence 1 ratings",
+                                    "Sentence 2 ratings",
+                                    "Sentence 3 ratings",
+                                    "RGB scale",
+                                    "Mean rating",
+                                    "Median rating",
+                                    "Min rating",
+                                    "Max rating"))
+    }else{
+      updateSelectInput(session, "colorCriteriaInterpolation",
+                        choices = c(paste0("Sentence ", 
+                                           activeSentencesI(), " ratings"),
+                                    "Mean rating",
+                                    "Median rating",
+                                    "Min rating",
+                                    "Max rating"))
+    }
   })
   
   
-  
-  
+  # (INT) Update sentence choices -------------------------------------------------
+  # This observer listens to surveySentencesDataListI(), not surveyDataI(), since the latter is only updated when you click "Apply".
+  observeEvent(surveySentencesDataListI(), { 
+    # Update choices for sentence 1
+    updateSelectizeInput(session,
+                         "sentence1I",
+                         label = "Sentence 1:",
+                         choices = getSentenceChoicesI(surveySentencesDataListI(), 
+                                                       paste0("S", input$surveyI), 
+                                                       surveySentencesTable),
+                         selected = getSentenceChoicesI(surveySentencesDataListI(), 
+                                                        paste0("S", input$surveyI), 
+                                                        surveySentencesTable)[[1]][[1]])
+    
+    # Update choices for all other sentences
+    lapply(activeSentencesI(), function(x){
+      updateSelectizeInput(session,
+                           paste0("sentence", x, "I"),
+                           choices = getSentenceChoicesI(surveySentencesDataListI(), 
+                                                         paste0("S", input$surveyI), 
+                                                         surveySentencesTable),
+                           selected = getSentenceChoicesI(surveySentencesDataListI(), 
+                                                          paste0("S", input$surveyI), 
+                                                          surveySentencesTable)[[1]][[1]])
+    })
+  })
   
   # RIGHT MENU BAR CONTROLS -------------------------------------------------
   observeEvent(input$sidebarItemExpanded, {
@@ -450,14 +589,13 @@ server <- function(input, output, session){
           title = "Display settings",
           id = "interpolationDisplaySettings",
           icon = "gears",
-          checkboxInput("showCriteriaInterp", 
-                        label = "Show points that don't match criteria?", 
-                        value = T),
-          radioButtons("colorCriteriaInterp",
-                       label = "Color points by:",
-                       choices = c("Selected criteria", "Sentence 1 ratings")),
-          actionButton("displaySettingsApplyInterp", "Apply",
-                       style = "background-color: #A8F74A"),
+          selectInput("colorCriteriaInterpolation",
+                      label = "Show:",
+                      choices = c("Sentence 1 ratings"),
+                      multiple = F),
+          div(style="display:inline-block", 
+              actionButton("interpolationDisplaySettingsApply", "Apply", 
+                           style = "background-color: #A8F74A")),
           style = 'margin-top: -2em'
         )
       })
@@ -475,8 +613,6 @@ server <- function(input, output, session){
       })
     }
   })
-  
-  
   
   ## When reset button is clicked, reset the map zoom
   observe({
@@ -604,7 +740,6 @@ server <- function(input, output, session){
   #   }
   # })
   # 
-  
 }
 
 
