@@ -129,20 +129,47 @@ ageBinLevels <- c("18-30", "31-40", "41-50", "51-60", ">61")
 
 
 # COLOR PALETTES --------------------------------------------------------
-discreteBlueYellow <- colorFactor(
-  palette = c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31"),
-  levels = 1:5
-)
+# discreteBlueYellow <- colorFactor(
+#   palette = c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31"),
+#   levels = 1:5,
+#   na.color = "#ffffff00"
+# )
+# 
+# discreteBlueYellowLegend <- colorFactor(
+#   palette = rev(c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31")),
+#   levels = 1:5,
+#   na.color = "#ffffff00"
+# )
 
 continuousBlueYellow <- colorNumeric(
   palette = c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31"),
-  domain = 1:5
+  domain = 1:5,
+  na.color = "#ffffff00"
 )
 
-discretePurpleGreen <- colorNumeric(
-  palette = c("#8a31a0", "#6c37d7", "#2569bb", "#04be96", "#13ec4d"),
-  domain = 1:5
+continuousBlueYellowLegend <- colorNumeric(
+  palette = rev(c("#3169d8", "#31a0d8", "#1eeba7", "#85d831", "#d8bc31")),
+  domain = 1:5,
+  na.color = "#ffffff00"
 )
+
+continuous44 <- colorNumeric(
+  palette = c("#562c90", "#913aa6", "#b845b4", "#d267cc", "#eebfe9", "#fff9c2", "#fff06b", "#ffec33", "#f7bf33", "#e88126"),
+  domain = -4:4,
+  na.color = "#ffffff00"
+)
+
+continuous44Legend <- colorNumeric(
+  palette = rev(c("#562c90", "#913aa6", "#b845b4", "#d267cc", "#eebfe9", "#fff9c2", "#fff06b", "#ffec33", "#f7bf33", "#e88126")),
+  domain = -4:4,
+  na.color = "#ffffff00"
+)
+
+# discretePurpleGreen <- colorNumeric(
+#   palette = c("#8a31a0", "#6c37d7", "#2569bb", "#04be96", "#13ec4d"),
+#   domain = 1:5,
+#   na.color = "#ffffff00"
+# )
 
 
 # Bo's labeling function --------------------------------------------------
