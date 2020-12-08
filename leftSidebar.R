@@ -11,7 +11,8 @@ LEFTSIDEBAR <- dashboardSidebar(
     id = "leftSidebar", # name of the left sidebar
     
     # POINTS MODE -----------------------------------------------------------
-    convertMenuItem(menuItem(expandedName = "pointMaps", text = "Point maps", tabName = "pointMaps",  icon = icon("map"), 
+    menuItem(expandedName = "pointMaps", text = "Point maps", 
+             tabName = "pointMaps",  icon = icon("map"), 
              startExpanded = TRUE,
              class = "active",
              # Title
@@ -35,11 +36,11 @@ LEFTSIDEBAR <- dashboardSidebar(
              actionButton("addSentence", "+ Add a sentence"), # button to add the second sentence
              div(style="display:inline-block", actionButton("sentencesReset", "Reset all", style = "background-color: #4AA8F7")),
              div(style="display:inline-block", actionButton("sentencesApply", "Apply", style = "background-color: #A8F74A"))
-    ), 
-    tabName = "pointMaps"), # see convertMenuItem function in dashboardFunctions.R
+    ),
+    hidden(menuItem("hiddenPointMaps", tabName = "hiddenPointMaps")),
 
     # INTERPOLATION MODE ------------------------------------------------------
-    convertMenuItem(menuItem(text = "Interpolation maps", expandedName = "interpolationMaps", 
+    menuItem(text = "Interpolation maps", expandedName = "interpolationMaps", 
              tabName = "interpolationMaps",
              icon = icon("map"),
              startExpanded = FALSE,
@@ -66,18 +67,14 @@ LEFTSIDEBAR <- dashboardSidebar(
                                                             style = "background-color: #4AA8F7")),
              div(style = "display:inline-block", actionButton("sentencesApplyI", "Apply", 
                                                               style = "background-color: #A8F74A"))
-             ), 
-             tabName = "interpolationMaps"), # see convertMenuItem function in dashboardFunctions.R
+             ),
+    hidden(menuItem("hiddenInterpolationMaps", tabName = "hiddenInterpolationMaps")),
     
-    # SOCIAL VARIABLES MODE ---------------------------------------------------
-    convertMenuItem(menuItem(text = "Social variables", expandedName = "socialVariables", 
-             tabName = "socialVariables",
+    # HOW TO MODE ---------------------------------------------------
+    menuItem(text = "How to", expandedName = "howTo", 
+             tabName = "howTo",
              icon = icon("map"), startExpanded = FALSE,
-             div(style = reduceSpacing,
-                 selectInput("test", "Test", 
-                             choices = c("a", "b", "c", "d", "e"),
-                             selected = "a",
-                             multiple = FALSE))),
-             tabName = "socialVariables") # see convertMenuItem function in dashboardFunctions.R
+             p("Instructions on how to use this app.")), #XXX have to fix this: currently this text NEEDS to be there in order to get the tab to open properly. That's not good.
+    hidden(menuItem("hiddenHowTo", tabName = "hiddenHowTo"))
   )
 )
