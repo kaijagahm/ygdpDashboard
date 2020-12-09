@@ -88,7 +88,7 @@ FOOTER
 )
 
 server <- function(input, output, session){
-# Update selected menu item -----------------------------------------------
+  # Update selected menu item -----------------------------------------------
   observeEvent(input$sidebarItemExpanded, {
     if(input$sidebarItemExpanded == "pointMaps"){
       updateTabItems(session, "leftSidebar", selected = "hiddenPointMaps")
@@ -243,112 +243,106 @@ server <- function(input, output, session){
       setView(-96, 37.8, 4)
   })
   
-
+  
   # (PTS) Points on map -----------------------------------------------------
   # Plot points
+  ## Re-plot when wideDat() changes
+  ### Data points
   observeEvent(wideDat(), {
-    if(is.null(input$showCriteriaPoints)){
-      leafletProxy("pointMap") %>%
-        clearMarkers() %>%
-        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         weight = 0.5,
-                         radius = 7, opacity = 1,
-                         fillOpacity = 0.8) %>%
-        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
-                  title = "Rating",
-                  opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE))
-        ) %>%
-        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = "black",
-                         color = "black",
-                         weight = 0.5,
-                         radius = 2, opacity = 1,
-                         fillOpacity = 1)
-    }else if(!is.null(input$showCriteriaPoints) & input$showCriteriaPoints == T){
-      leafletProxy("pointMap") %>%
-        clearMarkers() %>%
-        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         weight = 0.5,
-                         radius = 7, opacity = 1,
-                         fillOpacity = 0.8) %>%
-        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
-                  title = "Rating",
-                  opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE))
-        ) %>%
-        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = "black",
-                         color = "black",
-                         weight = 0.5,
-                         radius = 2, opacity = 1,
-                         fillOpacity = 1)
-    }else if(!is.null(input$showCriteriaPoints) & input$showCriteriaPoints == F){
-      leafletProxy("pointMap") %>%
-        clearMarkers() %>%
-        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         weight = 0.5,
-                         radius = 7, opacity = 1,
-                         fillOpacity = 0.8) %>%
-        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
-                  title = "Rating",
-                  opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE))
-        )
-    }
+    leafletProxy("pointMap") %>%
+      clearMarkers() %>%
+      addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                       popup = ~label,
+                       fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                       color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                       weight = 0.5,
+                       radius = 8, ### XXX make the points a little larger
+                       opacity = 1,
+                       fillOpacity = 0.8) %>%
+      addCircleMarkers(data = tad(), 
+                       lat = ~lat, lng = ~long,
+                       popup = ~label,
+                       fillColor = "black",
+                       color = "black",
+                       weight = 0.5,
+                       radius = 2, opacity = 1,
+                       fillOpacity = 1,
+                       group = "Does not meet criteria")
   })
-  
-  # Change point colors
-  observeEvent(input$pointDisplaySettingsApply, {
-    req(wideDat()) # wideDat() must already exist
-    req(tad()) # tad() must already exist
-    if(input$showCriteriaPoints == T){
+  ### Controls
+  observeEvent(wideDat(), {
+    if(colorCol() == "meetsCriteria"){
       leafletProxy("pointMap") %>%
-        clearMarkers() %>%
-        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                         weight = 0.5,
-                         radius = 7, opacity = 1,
-                         fillOpacity = 0.8) %>%
-        addCircleMarkers(data = tad(), lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = "black",
-                         color = "black",
-                         weight = 0.5,
-                         radius = 2, opacity = 1,
-                         fillOpacity = 1)
+        clearControls() %>%
+        addLayersControl(
+          overlayGroups = "Does not meet criteria") 
     }else{
       leafletProxy("pointMap") %>%
+        clearControls() %>%
+        addLayersControl(
+          overlayGroups = "Does not meet criteria",
+          options = layersControlOptions(collapsed = F)) %>%
+        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                  title = "Rating",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+    }
+  })
+    
+  ## Change point colors
+  ## Re-plot when input$pointDisplaySettingsApply is clicked
+  observeEvent(input$pointDisplaySettingsApply, {
+    req(wideDat())
+    req(tad())
+    ### Data points
+    observeEvent(wideDat(), {
+      leafletProxy("pointMap") %>%
         clearMarkers() %>%
         addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
                          popup = ~label,
                          fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          weight = 0.5,
-                         radius = 7, opacity = 1,
-                         fillOpacity = 0.8)
-    }
-  }, ignoreInit = T)
+                         radius = 8, ### XXX make the points a little larger
+                         opacity = 1,
+                         fillOpacity = 0.8) %>%
+        addCircleMarkers(data = tad(), 
+                         lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
+                         weight = 0.5,
+                         radius = 2, opacity = 1,
+                         fillOpacity = 1,
+                         group = "Does not meet criteria")
+    })
+    ### Controls
+    observeEvent(wideDat(), {
+      if(colorCol() == "meetsCriteria"){
+        leafletProxy("pointMap") %>%
+          clearControls() %>%
+          addLayersControl(
+            overlayGroups = "Does not meet criteria",
+            options = layersControlOptions(collapsed = F)) 
+      }else{
+        leafletProxy("pointMap") %>%
+          clearControls() %>%
+          addLayersControl(
+            overlayGroups = "Does not meet criteria") %>%
+          addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                    title = "Rating",
+                    opacity = 1,
+                    labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+      }
+    })
+  })
   
   
   # (PTS) map zoom ----------------------------------------------------------
   ## Define reset button
   output$pointMapResetZoom <- renderUI({
     div(style="display:inline-block", 
-        actionButton("resetPointMapZoom", "Reset map view", style = "background-color: #4AA8F7"))
+        actionButton("resetPointMapZoom", "Reset map zoom", style = "background-color: #4AA8F7"))
   })
   
   ## When reset button is clicked, reset the map zoom
@@ -526,7 +520,7 @@ server <- function(input, output, session){
   ## Dummy data for sentence selector options
   surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
     interpListLarge[names(interpListLarge) %in%
-                    surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
+                      surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
                                                           paste0("S", input$surveyI)]]
   })
   
@@ -556,9 +550,9 @@ server <- function(input, output, session){
         else .} %>%
       {if(ncol(.) >= 3) mutate(.,
                                min = min(c_across(contains("sentence")), na.rm = T),
-                              max = max(c_across(contains("sentence")), na.rm = T),
-                              med = median(c_across(contains("sentence")), na.rm = T),
-                              mn = mean(c_across(contains("sentence")), na.rm = T))
+                               max = max(c_across(contains("sentence")), na.rm = T),
+                               med = median(c_across(contains("sentence")), na.rm = T),
+                               mn = mean(c_across(contains("sentence")), na.rm = T))
         else .} %>%
       as.data.frame() %>%
       {if(nrow(.) == nrow(largeGrid)) bind_cols(., largeGrid) %>% st_as_sf() else .}
@@ -663,9 +657,9 @@ server <- function(input, output, session){
                                paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
              where = "afterEnd",
              ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
-                                inputList = surveySentencesDataListI(), 
-                                surveyIDString = paste0("S", input$surveyI),
-                                surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
+                                 inputList = surveySentencesDataListI(), 
+                                 surveyIDString = paste0("S", input$surveyI),
+                                 surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
     activeSentencesI(c(activeSentencesI(), last(activeSentencesI()) + 1)) # update activeSentencesI
     nSentencesI(nSentencesI() + 1) # update nSentencesI
     print(paste("Number of active sentences:", nSentencesI()))
@@ -735,10 +729,10 @@ server <- function(input, output, session){
   observeEvent(input$colorCriteriaInterpolation, { # reassign the value based on the input
     if(grepl("ratings", input$colorCriteriaInterpolation)){
       colorColI(input$colorCriteriaInterpolation %>% 
-                 str_replace(., "ratings", "") %>% 
-                 tolower() %>% 
-                 str_replace_all(., " ", "") %>%
-                 paste0(., ".pred"))
+                  str_replace(., "ratings", "") %>% 
+                  tolower() %>% 
+                  str_replace_all(., " ", "") %>%
+                  paste0(., ".pred"))
     }else if(input$colorCriteriaInterpolation == "Difference (1-2)"){
       colorColI("diff12")
     }else if(input$colorCriteriaInterpolation == "Difference (2-1)"){
@@ -815,9 +809,6 @@ server <- function(input, output, session){
             title = "Display settings",
             id = "pointDisplaySettings",
             icon = "gears",
-            checkboxInput("showCriteriaPoints", 
-                          label = "Show points that don't match criteria?", 
-                          value = T),
             selectInput("colorCriteriaPoints",
                         label = "Color points by:",
                         choices = c("Selected criteria", "Sentence 1 ratings"),
