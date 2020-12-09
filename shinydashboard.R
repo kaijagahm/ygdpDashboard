@@ -267,7 +267,7 @@ server <- function(input, output, session){
                        weight = 0.5,
                        radius = 2, opacity = 1,
                        fillOpacity = 1,
-                       group = "Does not meet criteria")
+                       group = "Show points that don't meet selected criteria")
   })
   ### Controls
   observeEvent(wideDat(), {
