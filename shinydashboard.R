@@ -41,12 +41,22 @@ source("footer.R")
 #   I suspect this has something to do with the data having 0 rows.
 
 ui <- tagList(dashboardPagePlus(
+  tags$head(
+    tags$style(
+      HTML(
+        ".control-sidebar-tabs {display:none;}"
+      )
+    )
+  ),
+  
   useShinyjs(),
   
-  ## Dashboard header (defined in header.R)
+  
+  # HEADER ------------------------------------------------------------------
   header = HEADER,
   
-  ## Left sidebar and menu options (defined in leftSidebar.R)
+  
+  # LEFT SIDEBAR ------------------------------------------------------------
   sidebar = LEFTSIDEBAR,
   
   
@@ -78,11 +88,75 @@ ui <- tagList(dashboardPagePlus(
     )
   ),
   
-  ## Right sidebar (defined in rightSidebar.R)
-  rightsidebar = RIGHTSIDEBAR
+  
+  # RIGHT SIDEBAR -----------------------------------------------------------
+  rightsidebar = rightSidebar(
+    background = "dark",
+    title = "Right Sidebar",
+    # Tabset for the right sidebar: switch between PTS/INT
+    tabsetPanel(id = "rightSidebarTabset",
+                type = "hidden", # we don't want to see these tabs
+                # (PTS)
+                tabPanel(title = "Point map controls",
+                         tabsetPanel(id = "pointMapTabset",
+                                     type = "tabs",
+                                     tabPanel(title = "Filter",
+                                              ageWidget,
+                                              raceWidget,
+                                              genderWidget,
+                                              educationWidget,
+                                              div(style = "display:inline-block", 
+                                                  actionButton("pointFiltersReset", "Reset",
+                                                               style = "background-color: #4AA8F7")
+                                              ),
+                                              div(style = "display:inline-block",
+                                                  actionButton("pointFiltersApply", "Apply",
+                                                               style = "background-color: #A8F74A")
+                                              )
+                                     ),
+                                     tabPanel(title = "Display settings",
+                                              br(),
+                                              selectInput("colorCriteriaPoints",
+                                                          label = "Color points by:",
+                                                          choices = c("Selected criteria", "Sentence 1 ratings"),
+                                                          multiple = F),
+                                              div(style = "display:inline-block",
+                                                  actionButton("pointDisplaySettingsApply", "Apply",
+                                                               style = "background-color: #A8F74A")))
+                         )
+                ),
+                # (INT)
+                tabPanel(title = "Interpolation map controls",
+                  tabsetPanel(id = "interpolationMapTabset",
+                              type = "tabs",
+                              tabPanel(
+                                title = "Display settings",
+                                br(),
+                                selectInput("colorCriteriaInterpolation",
+                                            label = "Show:",
+                                            choices = c("Sentence 1 ratings"),
+                                            multiple = F),
+                                div(style = "display:inline-block",
+                                    actionButton("interpolationDisplaySettingsApply", "Apply",
+                                                 style = "background-color: #A8F74A"))
+                              )
+                  )
+                ),
+                # (HT)
+                tabPanel(title = "How to controls",
+                         tabsetPanel(id = "howToTabset",
+                                     type = "tabs",
+                                     tabPanel(
+                                       title = "Credits",
+                                       br(),
+                                       p("Insert more information here.")
+                                     )))
+    )
+  )
 ),
 
-## Footer (defined in footer.R)
+
+# FOOTER ------------------------------------------------------------------
 FOOTER
 
 )
@@ -98,6 +172,18 @@ server <- function(input, output, session){
       updateTabItems(session, "leftSidebar", selected = "hiddenHowTo")
     }
   })
+  
+  # Update right sidebar tabs -----------------------------------------------
+  observeEvent(input$sidebarItemExpanded, {
+    if(input$sidebarItemExpanded == "pointMaps"){
+      updateTabsetPanel(session, "rightSidebarTabset", 
+                        selected = "Point map controls")
+    }else if(input$sidebarItemExpanded == "interpolationMaps"){
+      updateTabsetPanel(session, "rightSidebarTabset",
+                        selected = "Interpolation map controls")
+    }
+  })
+  
   
   # POINTS MODE (PTS) -------------------------------------------------------
   # (PTS) sentence counters -------------------------------------------------
@@ -778,68 +864,8 @@ server <- function(input, output, session){
     })
   })
   
-  # RIGHT MENU BAR CONTROLS -------------------------------------------------
+  # Open the right sidebar
   shinyjs::addClass(selector = "body", class = "control-sidebar-open")
-  observeEvent(input$sidebarItemExpanded, {
-    if(input$sidebarItemExpanded == "pointMaps"){
-      message("Point maps view has been selected.")
-      output$rightSidebar <- renderUI({
-        rightSidebar(
-          ### (PTS) Demographic filters
-          rightSidebarTabContent(
-            title = "Filter data",
-            id = "pointDemoFilters",
-            active = T,
-            icon = "sliders",
-            ageWidget, # defined in rightSidebar.R
-            raceWidget,
-            genderWidget, # defined in rightSidebar.R
-            educationWidget,
-            
-            div(style="display:inline-block", 
-                actionButton("pointFiltersReset", "Reset", 
-                             style = "background-color: #4AA8F7")),
-            div(style="display:inline-block", 
-                actionButton("pointFiltersApply", "Apply", 
-                             style = "background-color: #A8F74A")),
-            style = 'margin-top: -2em'
-          ),
-          ### (PTS) Display settings
-          rightSidebarTabContent(
-            title = "Display settings",
-            id = "pointDisplaySettings",
-            icon = "gears",
-            selectInput("colorCriteriaPoints",
-                        label = "Color points by:",
-                        choices = c("Selected criteria", "Sentence 1 ratings"),
-                        multiple = F),
-            div(style="display:inline-block", 
-                actionButton("pointDisplaySettingsApply", "Apply", 
-                             style = "background-color: #A8F74A")),
-            style = 'margin-top: -2em'
-          )
-        )
-      })
-    }else if(input$sidebarItemExpanded == "interpolationMaps"){
-      message("Interpolation map view has been selected.")
-      output$rightSidebar <- renderUI({
-        # Interpolation mode display settings
-        rightSidebarTabContent(
-          title = "Display settings",
-          id = "interpolationDisplaySettings",
-          icon = "gears",
-          selectInput("colorCriteriaInterpolation",
-                      label = "Show:",
-                      choices = c("Sentence 1 ratings"),
-                      multiple = F),
-          div(style="display:inline-block", 
-              actionButton("interpolationDisplaySettingsApply", "Apply", 
-                           style = "background-color: #A8F74A")),
-          style = 'margin-top: -2em'
-        )
-      })
-    }
-  })
 }
 
 

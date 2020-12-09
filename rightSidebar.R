@@ -2,17 +2,12 @@
 source("dashboardFunctions.R")
 includeNAsText <- "include NA's?"
 
-RIGHTSIDEBAR <- rightSidebar(
-  background = "dark",
-  uiOutput("rightSidebar"), # We'll define this dynamically using renderUI in the server
-  title = "Right Sidebar"
-)
-
 # Age input widget --------------------------------------------------------
 ageWidget <- div(
   h5("Age:"),
   checkboxInput("ageNAs", includeNAsText, value = TRUE),
   tabsetPanel(id = "ageTabs",
+              type = "tabs",
     tabPanel("range",
              br(),
              sliderInput("ageSlider", label = NULL, 
