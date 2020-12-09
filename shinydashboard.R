@@ -8,10 +8,10 @@ library(leaflet)
 library(leaflet.extras)
 library(sf)
 load("data/points/snl.Rda")
-load("data/interpolations/interpListLarge.Rda")
-largeGrid <- interpListLarge[[1]] %>%
+load("data/interpolations/interpListMedium.Rda")
+mediumGrid <- interpListMedium[[1]] %>%
   select("geometry")
-interpListLarge <- lapply(interpListLarge, st_drop_geometry)
+interpListMedium <- lapply(interpListMedium, st_drop_geometry)
 # load("data/interpolations/interpListMedium.Rda")
 # load("data/interpolations/interpListSmall.Rda")
 #load("data/interpolations/interpDFLarge.Rda")
@@ -303,7 +303,7 @@ server <- function(input, output, session){
                          fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          weight = 0.5,
-                         radius = 8, ### XXX make the points a little larger
+                         radius = 8,
                          opacity = 1,
                          fillOpacity = 0.8) %>%
         addCircleMarkers(data = tad(), 
@@ -510,16 +510,16 @@ server <- function(input, output, session){
   # (INT) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `datI`.
-  surveyDataI <- reactiveVal(interpListLarge[names(interpListLarge) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]]) # initial interp list for the chosen survey
+  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]]) # initial interp list for the chosen survey
   observeEvent(input$sentencesApplyI, { # When you click the "apply" button
     name <- paste0("S", input$surveyI)
-    surveyDataI(interpListLarge[names(interpListLarge) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
+    surveyDataI(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
   }, 
   ignoreInit = T)
   
   ## Dummy data for sentence selector options
   surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
-    interpListLarge[names(interpListLarge) %in%
+    interpListMedium[names(interpListMedium) %in%
                       surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
                                                           paste0("S", input$surveyI)]]
   })
@@ -555,7 +555,7 @@ server <- function(input, output, session){
                                mn = mean(c_across(contains("sentence")), na.rm = T))
         else .} %>%
       as.data.frame() %>%
-      {if(nrow(.) == nrow(largeGrid)) bind_cols(., largeGrid) %>% st_as_sf() else .}
+      {if(nrow(.) == nrow(mediumGrid)) bind_cols(., mediumGrid) %>% st_as_sf() else .}
   })
   # observeEvent(surveyDataI(), {
   #   browser()
@@ -568,7 +568,7 @@ server <- function(input, output, session){
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
       setView(-96, 37.8, 4) %>%
-      addPolygons(data = largeGrid %>%
+      addPolygons(data = mediumGrid %>%
                     st_transform(4326),
                   weight = 1,
                   color = "black",
@@ -577,7 +577,7 @@ server <- function(input, output, session){
   
   # (INT) Polygons on map ---------------------------------------------------
   observeEvent(datI(), {
-    if(nrow(datI()) == nrow(largeGrid) & "sentence1.pred" %in% names(datI())){
+    if(nrow(datI()) == nrow(mediumGrid) & "sentence1.pred" %in% names(datI())){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
         addPolygons(data = datI() %>%
@@ -588,7 +588,7 @@ server <- function(input, output, session){
                     fillOpacity = 1,
                     opacity = 1)
     }
-  }, ignoreInit = T)
+  })
   
   # Change polygon colors
   observeEvent(input$interpolationDisplaySettingsApply, {
