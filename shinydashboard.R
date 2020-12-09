@@ -288,7 +288,7 @@ server <- function(input, output, session){
                   labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }
   })
-    
+  
   ## Change point colors
   ## Re-plot when input$pointDisplaySettingsApply is clicked
   observeEvent(input$pointDisplaySettingsApply, {
@@ -520,8 +520,8 @@ server <- function(input, output, session){
   ## Dummy data for sentence selector options
   surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
     interpListMedium[names(interpListMedium) %in%
-                      surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
-                                                          paste0("S", input$surveyI)]]
+                       surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
+                                                           paste0("S", input$surveyI)]]
   })
   
   # (INT) leftRVI ------------------------------------------------------------------
@@ -844,4 +844,4 @@ server <- function(input, output, session){
 
 
 # Run the app
-shinyApp(ui = ui, server = server, options = list(display.mode = 'showcase'))
+shinyApp(ui = ui, server = server)
