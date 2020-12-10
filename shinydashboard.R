@@ -9,7 +9,7 @@ library(leaflet.extras)
 library(sf)
 load("data/points/snl.Rda")
 load("data/interpolations/interpListMedium.Rda")
-mediumGrid <- interpListMedium[[99]]
+mediumGrid <- interpListMedium[["I’m after forgettin’ the name of my favorite bakery."]]
 interpListMedium <- lapply(interpListMedium, st_drop_geometry)
 # load("data/interpolations/interpListMedium.Rda")
 # load("data/interpolations/interpListSmall.Rda")
@@ -704,7 +704,7 @@ server <- function(input, output, session){
                     fillOpacity = 1,
                     opacity = 1) %>%
         addLegend("bottomright", pal = continuous44Legend, values = -4:4,
-                  title = "Rating difference",
+                  title = "Difference",
                   opacity = 1,
                   labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }else{
