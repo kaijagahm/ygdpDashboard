@@ -74,7 +74,7 @@ LEFTSIDEBAR <- dashboardSidebar(
     menuItem(text = "How to", expandedName = "howTo", 
              tabName = "howTo",
              icon = icon("map"), startExpanded = FALSE,
-             p("Instructions on how to use this app.")), #XXX have to fix this: currently this text NEEDS to be there in order to get the tab to open properly. That's not good.
+             p("")),
     hidden(menuItem("hiddenHowTo", tabName = "hiddenHowTo"))
   )
 )
