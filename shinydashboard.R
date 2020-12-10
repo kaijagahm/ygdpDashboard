@@ -9,18 +9,17 @@ library(leaflet.extras)
 library(sf)
 load("data/points/snl.Rda")
 load("data/interpolations/interpListMedium.Rda")
-mediumGrid <- interpListMedium[[1]] %>%
-  select("geometry")
+mediumGrid <- interpListMedium[[99]]
 interpListMedium <- lapply(interpListMedium, st_drop_geometry)
 # load("data/interpolations/interpListMedium.Rda")
 # load("data/interpolations/interpListSmall.Rda")
 #load("data/interpolations/interpDFLarge.Rda")
 #names(interpDFLarge) <- str_replace_all(names(interpDFLarge), "’", "'")
 load("data/interpolations/surveySentencesTable.Rda")
-# library(reactlog)
+library(reactlog)
 
 # tell shiny to log all reactivity
-# reactlog_enable()
+reactlog_enable()
 
 # Load the functions and libraries
 source("dashboardFunctions.R")
@@ -29,8 +28,6 @@ source("dashboardFunctions.R")
 source("header.R")
 source("leftSidebar.R")
 source("rightSidebar.R")
-source("footer.R")
-
 
 # To do
 # Jitter lat/long points if they're nearby (can do this in pre-processing)
@@ -127,20 +124,20 @@ ui <- tagList(dashboardPagePlus(
                 ),
                 # (INT)
                 tabPanel(title = "Interpolation map controls",
-                  tabsetPanel(id = "interpolationMapTabset",
-                              type = "tabs",
-                              tabPanel(
-                                title = "Display settings",
-                                br(),
-                                selectInput("colorCriteriaInterpolation",
-                                            label = "Show:",
-                                            choices = c("Sentence 1 ratings"),
-                                            multiple = F),
-                                div(style = "display:inline-block",
-                                    actionButton("interpolationDisplaySettingsApply", "Apply",
-                                                 style = "background-color: #A8F74A"))
-                              )
-                  )
+                         tabsetPanel(id = "interpolationMapTabset",
+                                     type = "tabs",
+                                     tabPanel(
+                                       title = "Display settings",
+                                       br(),
+                                       selectInput("colorCriteriaInterpolation",
+                                                   label = "Show:",
+                                                   choices = c("Sentence 1 ratings"),
+                                                   multiple = F),
+                                       div(style = "display:inline-block",
+                                           actionButton("interpolationDisplaySettingsApply", "Apply",
+                                                        style = "background-color: #A8F74A"))
+                                     )
+                         )
                 ),
                 # (HT)
                 tabPanel(title = "How to controls",
@@ -149,15 +146,16 @@ ui <- tagList(dashboardPagePlus(
                                      tabPanel(
                                        title = "Credits",
                                        br(),
-                                       p("Insert more information here.")
+                                       p("This app was created by Kaija Gahm for the YGDP in Fall 2020, with help from Ian Niedel."),
+                                       hr(),
+                                       p("Code at https://github.com/kaijagahm/
+                                         ygdpDashboard."),
+                                       hr(),
+                                       p("Survey data collected by Jim Wood, Raffaella Zanuttini, and the rest of the Yale Grammatical Diversity Project (ygdp.yale.edu)")
                                      )))
     )
   )
-),
-
-
-# FOOTER ------------------------------------------------------------------
-FOOTER
+)
 
 )
 
@@ -181,6 +179,9 @@ server <- function(input, output, session){
     }else if(input$sidebarItemExpanded == "interpolationMaps"){
       updateTabsetPanel(session, "rightSidebarTabset",
                         selected = "Interpolation map controls")
+    }else if(input$sidebarItemExpanded == "howTo"){
+      updateTabsetPanel(session, "rightSidebarTabset",
+                        selected = "How to controls")
     }
   })
   
@@ -342,7 +343,7 @@ server <- function(input, output, session){
                        fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                        color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                        weight = 0.5,
-                       radius = 8, ### XXX make the points a little larger
+                       radius = 8,
                        opacity = 1,
                        fillOpacity = 0.8) %>%
       addCircleMarkers(data = tad(), 
@@ -657,8 +658,14 @@ server <- function(input, output, session){
       addPolygons(data = mediumGrid %>%
                     st_transform(4326),
                   weight = 1,
-                  color = "black",
-                  fillOpacity = 0.1)
+                  color = ~continuousBlueYellow(pred),
+                  fillColor = ~continuousBlueYellow(pred),
+                  fillOpacity = 1,
+                  opacity = 1) %>%
+      addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                title = "Rating",
+                opacity = 1,
+                labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
   })
   
   # (INT) Polygons on map ---------------------------------------------------
@@ -666,13 +673,18 @@ server <- function(input, output, session){
     if(nrow(datI()) == nrow(mediumGrid) & "sentence1.pred" %in% names(datI())){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
+        clearControls() %>%
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
                     color = ~continuousBlueYellow(sentence1.pred),
                     fillColor =~continuousBlueYellow(sentence1.pred),
                     fillOpacity = 1,
-                    opacity = 1)
+                    opacity = 1) %>%
+        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                  title = "Rating",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }
   })
   
@@ -683,23 +695,33 @@ server <- function(input, output, session){
     if(colorColI() %in% c("diff21", "diff12")){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
+        clearControls() %>%
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
                     color = ~continuous44(eval(as.symbol(colorColI()))),
                     fillColor = ~continuous44(eval(as.symbol(colorColI()))),
                     fillOpacity = 1,
-                    opacity = 1)
+                    opacity = 1) %>%
+        addLegend("bottomright", pal = continuous44Legend, values = -4:4,
+                  title = "Rating difference",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }else{
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
+        clearControls() %>%
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
                     color = ~continuousBlueYellow(eval(as.symbol(colorColI()))),
                     fillColor =~continuousBlueYellow(eval(as.symbol(colorColI()))),
                     fillOpacity = 1,
-                    opacity = 1)
+                    opacity = 1) %>%
+        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                  title = "Rating",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }
   }, ignoreInit = T)
   
