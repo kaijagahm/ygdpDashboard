@@ -12,7 +12,7 @@ LEFTSIDEBAR <- dashboardSidebar(
     
     # POINTS MODE -----------------------------------------------------------
     menuItem(expandedName = "pointMaps", text = "Point maps", 
-             tabName = "pointMaps",  icon = icon("map"), 
+             tabName = "pointMaps",  icon = icon("map-marker"), 
              startExpanded = TRUE,
              class = "active",
              # Title
@@ -73,8 +73,17 @@ LEFTSIDEBAR <- dashboardSidebar(
     # HOW TO MODE ---------------------------------------------------
     menuItem(text = "How to", expandedName = "howTo", 
              tabName = "howTo",
-             icon = icon("map"), startExpanded = FALSE,
+             icon = icon("info"), startExpanded = FALSE,
              p("")),
-    hidden(menuItem("hiddenHowTo", tabName = "hiddenHowTo"))
+    hidden(menuItem("hiddenHowTo", tabName = "hiddenHowTo")),
+    
+
+    # ABOUT -------------------------------------------------------------------
+    menuItem(text = "About", expandedName = "about",
+             tabName = "about",
+             icon = icon("question"), startExpanded = FALSE,
+             p("")),
+    hidden(menuItem("hiddenAbout", tabName = "hiddenAbout"))
+    
   )
 )

@@ -77,7 +77,9 @@ ui <- tagList(dashboardPagePlus(
       ),
       tabItem(tabName = "hiddenHowTo",
               p("Here is some information about how to use this app.")
-      )
+      ),
+      tabItem(tabName = "hiddenAbout",
+              p("Here is some information about the YGDP"))
     )
   ),
   
@@ -148,6 +150,16 @@ ui <- tagList(dashboardPagePlus(
                                          ygdpDashboard."),
                                        hr(),
                                        p("Survey data collected by Jim Wood, Raffaella Zanuttini, and the rest of the Yale Grammatical Diversity Project (ygdp.yale.edu)")
+                                     ))),
+                tabPanel(title = "About controls",
+                         tabsetPanel(id = "aboutTabset",
+                                     type = "tabs",
+                                     tabPanel(
+                                       title = "Resources",
+                                       br(),
+                                       p("LINK TO MAPBOOK"),
+                                       p("LINK TO YGDP WEBSITE"),
+                                       p("LINK TO TWITTER")
                                      )))
     )
   )
@@ -164,6 +176,8 @@ server <- function(input, output, session){
       updateTabItems(session, "leftSidebar", selected = "hiddenInterpolationMaps")
     }else if(input$sidebarItemExpanded == "howTo"){
       updateTabItems(session, "leftSidebar", selected = "hiddenHowTo")
+    }else if(input$sidebarItemExpanded == "about"){
+      updateTabItems(session, "leftSidebar", selected = "hiddenAbout")
     }
   })
   
@@ -178,6 +192,9 @@ server <- function(input, output, session){
     }else if(input$sidebarItemExpanded == "howTo"){
       updateTabsetPanel(session, "rightSidebarTabset",
                         selected = "How to controls")
+    }else if(input$sidebarItemExpanded == "about"){
+      updateTabsetPanel(session, "rightSidebarTabset",
+                        selected = "About controls")
     }
   })
   
