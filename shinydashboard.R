@@ -9,17 +9,13 @@ library(leaflet.extras)
 library(sf)
 load("data/points/snl.Rda")
 load("data/interpolations/interpListMedium.Rda")
-mediumGrid <- interpListMedium[["I’m after forgettin’ the name of my favorite bakery."]]
+mediumGrid <- interpListMedium[["I'm after forgettin' the name of my favorite bakery."]]
 interpListMedium <- lapply(interpListMedium, st_drop_geometry)
-# load("data/interpolations/interpListMedium.Rda")
-# load("data/interpolations/interpListSmall.Rda")
-#load("data/interpolations/interpDFLarge.Rda")
-#names(interpDFLarge) <- str_replace_all(names(interpDFLarge), "’", "'")
 load("data/interpolations/surveySentencesTable.Rda")
-library(reactlog)
+#library(reactlog)
 
 # tell shiny to log all reactivity
-reactlog_enable()
+#reactlog_enable()
 
 # Load the functions and libraries
 source("dashboardFunctions.R")
@@ -254,6 +250,9 @@ server <- function(input, output, session){
   
   # (PTS) Data --------------------------------------------------------------------
   # The data to use for plotting is a reactive expression that depends on surveyData(), leftRV, and rightRV.
+  # observe({
+  #   browser()
+  #   })
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
