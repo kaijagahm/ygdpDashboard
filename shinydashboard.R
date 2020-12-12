@@ -76,7 +76,18 @@ ui <- tagList(dashboardPagePlus(
               uiOutput("interpolationMapResetZoom")
       ),
       tabItem(tabName = "hiddenHowTo",
-              p("Here is some information about how to use this app.")
+              tabBox(width = 12,
+                     height = 12,
+                # The id lets us use input$howToBox on the server to find the current tab
+                id = "howToBox",
+                ## How to use points mode
+                tabPanel("Point maps", 
+                         imageOutput("pointsBanner"),
+                         p("Each point on the map in points mode represents a single survey participant.")),
+                ## How to use interpolation mode
+                tabPanel("Interpolation maps", 
+                         imageOutput("interpolationBanner"))
+              )
       ),
       tabItem(tabName = "hiddenAbout",
               p("Here is some information about the YGDP"))
@@ -197,6 +208,20 @@ server <- function(input, output, session){
                         selected = "About controls")
     }
   })
+  
+  # (HT) Banner images ------------------------------------------------------
+  output$pointsBanner <- renderImage({
+    return(list(src = "data/howTo/pointsBanner.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  output$interpolationBanner <- renderImage({
+    return(list(src = "data/howTo/interpolationBanner.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
   
   
   # POINTS MODE (PTS) -------------------------------------------------------
@@ -567,9 +592,13 @@ server <- function(input, output, session){
   
   # (PTS) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApply|input$sentencesReset, {
+    val <- input$colorCriteriaPoints
+    choices1 <- c("Sentence 1 ratings", "Selected criteria")
+
     if(nSentences() == 1){
       updateSelectInput(session, "colorCriteriaPoints",
-                        choices = c("Sentence 1 ratings", "Selected criteria"))
+                        choices = c("Sentence 1 ratings", "Selected criteria"),
+                        selected = ifelse(val %in% choices1, val, "Sentence 1 ratings"))
     }else{
       updateSelectInput(session, "colorCriteriaPoints",
                         choices = c(paste0("Sentence ", activeSentences(), " ratings"),
@@ -577,9 +606,10 @@ server <- function(input, output, session){
                                     "Median rating",
                                     "Min rating",
                                     "Max rating",
-                                    "Selected criteria"))
+                                    "Selected criteria"),
+                        selected = val)
     }
-  })
+  }, ignoreInit = T)
   
   # Translate input$colorCriteriaPoints into the names of the columns in wideDat()
   colorCol <- reactiveVal("sentence1") # initial value is sentence1
