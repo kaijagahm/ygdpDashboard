@@ -32,6 +32,7 @@ source("rightSidebar.R")
 #   Sometimes, but not always, when you select survey 9 or survey 7 there's an error.
 #   Sometimes there's an error when the filters are set a certain way, such as moving the age slider up to ~90-100.
 #   I suspect this has something to do with the data having 0 rows.
+# Confirmed--definitely has to do with the data having 0 rows. Maybe some if/else logic in the dat() and datI() definitions would help.
 
 ui <- tagList(dashboardPagePlus(
   tags$head(
@@ -124,7 +125,7 @@ ui <- tagList(dashboardPagePlus(
                                               br(),
                                               selectInput("colorCriteriaPoints",
                                                           label = "Color points by:",
-                                                          choices = c("Selected criteria", "Sentence 1 ratings"),
+                                                          choices = c("Sentence 1 ratings", "Selected criteria"),
                                                           multiple = F),
                                               div(style = "display:inline-block",
                                                   actionButton("pointDisplaySettingsApply", "Apply",
