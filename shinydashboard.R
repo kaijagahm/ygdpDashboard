@@ -26,7 +26,6 @@ source("leftSidebar.R")
 source("rightSidebar.R")
 
 # To do
-# Jitter lat/long points if they're nearby (can do this in pre-processing)
 # Add additional label information to the points that don't meet the criteria.
 # Fix bugs:
 #   Sometimes, but not always, when you select survey 9 or survey 7 there's an error.
@@ -77,17 +76,188 @@ ui <- tagList(dashboardPagePlus(
               uiOutput("interpolationMapResetZoom")
       ),
       tabItem(tabName = "hiddenHowTo",
+              br(),
               tabBox(width = 12,
                      height = 12,
-                # The id lets us use input$howToBox on the server to find the current tab
-                id = "howToBox",
-                ## How to use points mode
-                tabPanel("Point maps", 
-                         imageOutput("pointsBanner"),
-                         p("Each point on the map in points mode represents a single survey participant.")),
-                ## How to use interpolation mode
-                tabPanel("Interpolation maps", 
-                         imageOutput("interpolationBanner"))
+                     # The id lets us use input$howToBox on the server to find the current tab
+                     id = "howToBox",
+                     ## How to use points mode
+                     tabPanel("Point maps",
+                              div(style = 'overflow-y:scroll;height:500px',
+                              boxPlus(title = "Left sidebar",
+                                      width = 12,
+                                      column(width = 4,
+                                             imageOutput("PTSLeftSidebar", 
+                                                         height = "50%")
+                                             ),
+                                      column(width = 8,
+                                             div(style = "font-size:16px;",
+                                                 tags$ol(
+                                                   tags$li("Select a survey. The sentence choices will update dynamically."), 
+                                                   br(),
+                                                   tags$li("Select a sentence. Sentences are organized by grammatical phenomenon."), 
+                                                   br(),
+                                                   tags$li("You can use the rating buttons to restrict the data by participants' chosen ratings for the selected sentence. The default is to show all ratings."),
+                                                   br(),
+                                                   tags$li("To add more sentences, click 'Add a sentence.' Use the corresponding sentence and rating selectors that appear, as described in (2) and (3)."),
+                                                   br(),
+                                                   tags$li("To see your choices on the map, click 'Apply.'"),
+                                                   br(),
+                                                   tags$li("To reset the sentence and rating selections, use 'Reset all.' Note that after you reset the sentences, you will have to click 'Apply' again for your changes to be shown.")
+                                                 )
+                                             )
+                                             ),
+                                      collapsible = T,
+                                      collapsed = F,
+                                      closable = F),
+                                  boxPlus(title = "Map",
+                                      width = 12,
+                                      imageOutput("PTSMap", 
+                                                  height = "50%"),
+                                      br(),
+                                      div(
+                                        style = "font-size:16px;",
+                                        tags$ol(
+                                          tags$li("Each point on the map represents a single survey participant."), 
+                                          br(),
+                                          tags$li("When several points are located in the same city, they have been jittered very slightly for visibility. You may have to zoom in very far to distinguish the points from each other. Try zooming in on New York City, for example!"), 
+                                          br(),
+                                          tags$li("Large, colored points match the criteria that you have chosen: selected ratings (left sidebar) and demographic criteria (right sidebar). Depending on your selection in the 'Display settings' tab (see the next section of this how-to), the points may be colored by whether or not they meet the criteria, or by participants' ratings of the sentences. If the latter, then a legend at the bottom corner of the map will key the map colors."),
+                                          br(),
+                                          tags$li("Small, black points do not meet the criteria that you have selected in the left and right sidebars."),
+                                          br(),
+                                          tags$li("You can toggle whether to display these small, black points using the checkbox at the top of the map."),
+                                          br(),
+                                          tags$li("Zoom in and out using the map controls or your mouse. Pan around the map by clicking and dragging."),
+                                          br(),
+                                          tags$li("Reset the map zoom and center focus using the reset button below the map."),
+                                          br(),
+                                          tags$li("Click on a point to see demographic information about that participant, as well as their ratings of each selected sentence.")
+                                        )
+                                      ),
+                                      collapsible = T,
+                                      collapsed = T,
+                                      closable = F),
+                              boxPlus(title = "Right sidebar",
+                                      width = 12,
+                                      fluidRow(
+                                        column(
+                                          width = 8,
+                                          div(
+                                            style = "font-size:16px;",
+                                            tags$ol(
+                                              tags$li("In the 'Filter' tab of the right sidebar, you can filter the points you'd like to display by various demographic categories."), 
+                                              br(),
+                                              tags$li("There are two ways to filter by age: with a continuous slider, or by categorical age bins. You can toggle between these with the 'range' and 'bins' tabs."), 
+                                              br(),
+                                              tags$li("For each demographic category, you can choose to exclude missing values (NA's). Some participants declined to provide demographic information, resulting in these missing values."),
+                                              br(),
+                                              tags$li("Within each demographic category dropdown menu, you can use the 'Select All' and 'Deselect All' options to make it easier to select multiple categories."),
+                                              br(),
+                                              tags$li("To update the map to reflect your selections, use the 'Apply' button."),
+                                              br(),
+                                              tags$li("Use the 'Reset' button to reset the demographic filters to their original values. Note that you will have to click 'Apply' again after resetting the filters to apply your changes.")
+                                            )
+                                          )
+                                        ),
+                                        column(
+                                          width = 4,
+                                          
+                                          imageOutput("PTSRightSidebar",
+                                                      height = "50%")
+                                               )
+                                      ),
+                                      br(),
+                                      fluidRow(
+                                        column(
+                                          width = 8,
+                                          p("here is how you use the right sidebar display settings")
+                                        ),
+                                        column(
+                                          width = 4,
+                                          imageOutput("PTSDisplaySettings",
+                                                      height = "50%")
+                                        )
+                                      ),
+                                      collapsible = T,
+                                      collapsed = T,
+                                      closable = F)
+                              )
+                     ),
+                     ## How to use interpolation mode
+                     tabPanel("Interpolation maps",
+                              div(style = 'overflow-y:scroll;height:500px',
+                                  boxPlus(title = "Left sidebar",
+                                          width = 12,
+                                          column(width = 4,
+                                                 imageOutput("INTLeftSidebar", 
+                                                             height = "50%")
+                                          ),
+                                          column(width = 8,
+                                                 div(style = "font-size:16px;",
+                                                     tags$ol(
+                                                       tags$li("Select a survey. The sentence choices will update dynamically."), 
+                                                       br(),
+                                                       tags$li("Select a sentence. Sentences are organized by grammatical phenomenon."), 
+                                                       br(),
+                                                       tags$li("To add more sentences, click 'Add a sentence.' Use the corresponding sentence selector that appears, as described in (2)."),
+                                                       br(),
+                                                       tags$li("To see your choices on the map, click 'Apply.'"),
+                                                       br(),
+                                                       tags$li("To reset the sentence and rating selections, use 'Reset all.' Note that after you reset the sentences, you will have to click 'Apply' again for your changes to be shown.")
+                                                     )
+                                                 )
+                                          ),
+                                          collapsible = T,
+                                          collapsed = F,
+                                          closable = F),
+                                  boxPlus(title = "Map",
+                                          width = 12,
+                                          imageOutput("INTMap", 
+                                                      height = "50%"),
+                                          br(),
+                                          div(
+                                            style = "font-size:16px;",
+                                            tags$ol(
+                                              tags$li("The map is divided into a grid of hexagons. Point ratings have been interpolated to create a continuous surface, and then each hexagon is colored according to the predicted interpolation value at its centroid."), ## Check whether this is averaged or just sampled
+                                              br(),
+                                              tags$li("The legend provides a key to the hexagon colors. The scale is from 1 to 5 if the map is set to display ratings for a single sentence or aggregate statistics for more than one sentence, or from -4 to 4 if the map is set to display the difference between the ratings for two different sentences."), 
+                                              br(),
+                                              tags$li("Zoom in and out using the map controls or your mouse. Pan around the map by clicking and dragging."),
+                                              br(),
+                                              tags$li("Reset the map zoom and center focus using the reset button below the map.")
+                                            )
+                                          ),
+                                          collapsible = T,
+                                          collapsed = T,
+                                          closable = F),
+                                  boxPlus(title = "Right sidebar",
+                                          width = 12,
+                                          fluidRow(
+                                            column(
+                                              width = 8,
+                                              div(
+                                                style = "font-size:16px;",
+                                                tags$ol(
+                                                  tags$li("Select a method for coloring the hexagons. If one sentence is selected, you can only color by the ratings for that sentence. If two sentences are selected, you can color by the ratings for either sentence, or by the difference between the sentences for each hexagon, or by aggregate statistics like that minimum, maximum, mean, or median. If more than two sentences are selected, the difference options go away."), 
+                                                  br(),
+                                                  tags$li("Use the 'Apply' button to update the map to reflect your changes.")
+                                                )
+                                              )
+                                            ),
+                                            column(
+                                              width = 4,
+                                              
+                                              imageOutput("INTDisplaySettings",
+                                                          height = "50%")
+                                            )
+                                          ),
+                                          collapsible = T,
+                                          collapsed = T,
+                                          closable = F)
+                              )
+                              
+                              )
               )
       ),
       tabItem(tabName = "hiddenAbout",
@@ -211,17 +381,71 @@ server <- function(input, output, session){
   })
   
   # (HT) Banner images ------------------------------------------------------
-  output$pointsBanner <- renderImage({
-    return(list(src = "data/howTo/pointsBanner.png",
+  output$PTSBanner <- renderImage({
+    return(list(src = "data/howTo/PTSBanner.png",
                 contentType = "image/png",
                 width = "100%"))
   }, deleteFile = FALSE)
   
-  output$interpolationBanner <- renderImage({
-    return(list(src = "data/howTo/interpolationBanner.png",
+  output$INTBanner <- renderImage({
+    return(list(src = "data/howTo/INTBanner.png",
                 contentType = "image/png",
                 width = "100%"))
   }, deleteFile = FALSE)
+  
+  
+  # (HT) Other images -------------------------------------------------------
+  ## (PTS)
+  ### Left sidebar
+  output$PTSLeftSidebar <- renderImage({
+    return(list(src = "data/howTo/PTSLeftSidebar.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ### Map
+  output$PTSMap <- renderImage({
+    return(list(src = "data/howTo/PTSMap.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ### Right sidebar (filters)
+  output$PTSRightSidebar <- renderImage({
+    return(list(src = "data/howTo/PTSRightSidebar.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ### Right sidebar (display settings)
+  output$PTSDisplaySettings <- renderImage({
+    return(list(src = "data/howTo/PTSDisplaySettings.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ## (INT)
+  ### Left sidebar
+  output$INTLeftSidebar <- renderImage({
+    return(list(src = "data/howTo/INTLeftSidebar.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ### Map
+  output$INTMap <- renderImage({
+    return(list(src = "data/howTo/INTMap.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
+  ### Right sidebar (display settings)
+  output$INTDisplaySettings <- renderImage({
+    return(list(src = "data/howTo/INTDisplaySettings.png",
+                contentType = "image/png",
+                width = "100%"))
+  }, deleteFile = FALSE)
+  
   
   
   
@@ -404,7 +628,8 @@ server <- function(input, output, session){
       leafletProxy("pointMap") %>%
         clearControls() %>%
         addLayersControl(
-          overlayGroups = "Does not meet criteria") 
+          overlayGroups = "Does not meet criteria",
+          options = layersControlOptions(collapsed = F)) 
     }else{
       leafletProxy("pointMap") %>%
         clearControls() %>%
@@ -457,7 +682,8 @@ server <- function(input, output, session){
         leafletProxy("pointMap") %>%
           clearControls() %>%
           addLayersControl(
-            overlayGroups = "Does not meet criteria") %>%
+            overlayGroups = "Does not meet criteria",
+            options = layersControlOptions(collapsed = F)) %>%
           addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
                     title = "Rating",
                     opacity = 1,
@@ -595,7 +821,7 @@ server <- function(input, output, session){
   observeEvent(input$sentencesApply|input$sentencesReset, {
     val <- input$colorCriteriaPoints
     choices1 <- c("Sentence 1 ratings", "Selected criteria")
-
+    
     if(nSentences() == 1){
       updateSelectInput(session, "colorCriteriaPoints",
                         choices = c("Sentence 1 ratings", "Selected criteria"),
