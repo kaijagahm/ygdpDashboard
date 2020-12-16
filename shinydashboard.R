@@ -540,6 +540,8 @@ server <- function(input, output, session){
     rightRV$education <- input$education
   }, ignoreInit = T)
   
+
+  # (PTS) Data --------------------------------------------------------------
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
@@ -616,60 +618,12 @@ server <- function(input, output, session){
       setView(-96, 37.8, 4)
   })
   
-  
   # (PTS) Points on map -----------------------------------------------------
   # Plot points
   ## Re-plot when wideDat() changes
   ### Data points
   observeEvent(wideDat(), {
-    leafletProxy("pointMap") %>%
-      clearMarkers() %>%
-      addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                       popup = ~label,
-                       fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                       color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
-                       weight = 0.5,
-                       radius = 8,
-                       opacity = 1,
-                       fillOpacity = 0.8) %>%
-      addCircleMarkers(data = tad(), 
-                       lat = ~lat, lng = ~long,
-                       popup = ~label,
-                       fillColor = "black",
-                       color = "black",
-                       weight = 0.5,
-                       radius = 2, opacity = 1,
-                       fillOpacity = 1,
-                       group = "Show points that don't meet selected criteria")
-  })
-  ### Controls
-  observeEvent(wideDat(), {
-    if(colorCol() == "meetsCriteria"){
-      leafletProxy("pointMap") %>%
-        clearControls() %>%
-        addLayersControl(
-          overlayGroups = "Does not meet criteria",
-          options = layersControlOptions(collapsed = F)) 
-    }else{
-      leafletProxy("pointMap") %>%
-        clearControls() %>%
-        addLayersControl(
-          overlayGroups = "Does not meet criteria",
-          options = layersControlOptions(collapsed = F)) %>%
-        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
-                  title = "Rating",
-                  opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
-    }
-  })
-  
-  ## Change point colors
-  ## Re-plot when input$pointDisplaySettingsApply is clicked
-  observeEvent(input$pointDisplaySettingsApply, {
-    req(wideDat())
-    req(tad())
-    ### Data points
-    observeEvent(wideDat(), {
+    if(nrow(wideDat()) > 0){
       leafletProxy("pointMap") %>%
         clearMarkers() %>%
         addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
@@ -688,7 +642,82 @@ server <- function(input, output, session){
                          weight = 0.5,
                          radius = 2, opacity = 1,
                          fillOpacity = 1,
-                         group = "Does not meet criteria")
+                         group = "Show points that don't meet selected criteria")
+    }else{
+      leafletProxy("pointMap") %>%
+        clearMarkers() %>%
+        addCircleMarkers(data = tad(), 
+                         lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
+                         weight = 0.5,
+                         radius = 2, opacity = 1,
+                         fillOpacity = 1,
+                         group = "Show points that don't meet selected criteria")
+    }
+  })
+  ### Controls
+  observeEvent(wideDat(), {
+    if(colorCol() == "meetsCriteria"){
+      leafletProxy("pointMap") %>%
+        clearControls() %>%
+        addLayersControl(
+          overlayGroups = "Show points that don't meet selected criteria",
+          options = layersControlOptions(collapsed = F)) 
+    }else{
+      leafletProxy("pointMap") %>%
+        clearControls() %>%
+        addLayersControl(
+          overlayGroups = "Show points that don't meet selected criteria",
+          options = layersControlOptions(collapsed = F)) %>%
+        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+                  title = "Rating",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+    }
+  })
+  
+  ## Change point colors
+  ## Re-plot when input$pointDisplaySettingsApply is clicked
+  observeEvent(input$pointDisplaySettingsApply, {
+    req(wideDat())
+    req(tad())
+    ### Data points
+    observeEvent(wideDat(), {
+      if(nrow(wideDat()) > 0){
+        leafletProxy("pointMap") %>%
+          clearMarkers() %>%
+          addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
+                           popup = ~label,
+                           fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                           color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                           weight = 0.5,
+                           radius = 8,
+                           opacity = 1,
+                           fillOpacity = 0.8) %>%
+          addCircleMarkers(data = tad(), 
+                           lat = ~lat, lng = ~long,
+                           popup = ~label,
+                           fillColor = "black",
+                           color = "black",
+                           weight = 0.5,
+                           radius = 2, opacity = 1,
+                           fillOpacity = 1,
+                           group = "Show points that don't meet selected criteria")
+      }else{
+        leafletProxy("pointMap") %>%
+          clearMarkers() %>%
+          addCircleMarkers(data = tad(), 
+                           lat = ~lat, lng = ~long,
+                           popup = ~label,
+                           fillColor = "black",
+                           color = "black",
+                           weight = 0.5,
+                           radius = 2, opacity = 1,
+                           fillOpacity = 1,
+                           group = "Show points that don't meet selected criteria")
+      }
     })
     ### Controls
     observeEvent(wideDat(), {
@@ -696,13 +725,13 @@ server <- function(input, output, session){
         leafletProxy("pointMap") %>%
           clearControls() %>%
           addLayersControl(
-            overlayGroups = "Does not meet criteria",
+            overlayGroups = "Show points that don't meet selected criteria",
             options = layersControlOptions(collapsed = F)) 
       }else{
         leafletProxy("pointMap") %>%
           clearControls() %>%
           addLayersControl(
-            overlayGroups = "Does not meet criteria",
+            overlayGroups = "Show points that don't meet selected criteria",
             options = layersControlOptions(collapsed = F)) %>%
           addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
                     title = "Rating",
