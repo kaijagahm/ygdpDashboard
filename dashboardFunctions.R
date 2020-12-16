@@ -165,6 +165,24 @@ continuous44Legend <- colorNumeric(
   na.color = "#ffffff00"
 )
 
+redLegend <- colorNumeric(
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(255, 0, 0, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  domain = 1:5,
+  na.color = "#ffffff00"
+)
+
+greenLegend <- colorNumeric(
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 255, 0, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  domain = 1:5,
+  na.color = "#ffffff00"
+)
+
+blueLegend <- colorNumeric(
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 0, 255, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  domain = 1:5,
+  na.color = "#ffffff00"
+)
+
 # discretePurpleGreen <- colorNumeric(
 #   palette = c("#8a31a0", "#6c37d7", "#2569bb", "#04be96", "#13ec4d"),
 #   domain = 1:5,

@@ -525,7 +525,7 @@ server <- function(input, output, session){
   
   observeEvent(input$pointFiltersApply, {
     rightRV$ageNAs <- input$ageNAs
-    if(input$ageTabs == "range"){ # when I run this if/else bit in a browser, it keeps giving me "debug" messages. But it seems to be working in the actual app. What the heck?
+    if(input$ageTabs == "range"){
       rightRV$ageSlider <- as.numeric(input$ageSlider)
       rightRV$ageButtons <- NULL
     }else{
@@ -540,12 +540,6 @@ server <- function(input, output, session){
     rightRV$education <- input$education
   }, ignoreInit = T)
   
-  
-  # (PTS) Data --------------------------------------------------------------------
-  # The data to use for plotting is a reactive expression that depends on surveyData(), leftRV, and rightRV.
-  # observe({
-  #   browser()
-  #   })
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
@@ -932,20 +926,30 @@ server <- function(input, output, session){
                                diff21 = sentence2.pred - sentence1.pred,
                                mn = mean(c_across(contains("sentence")), na.rm = T),
                                max = max(c_across(contains("sentence")), na.rm = T),
-                               min = min(c_across(contains("sentence")), na.rm = T))
+                               min = min(c_across(contains("sentence")), na.rm = T)
+      )
         else .} %>%
-      {if(ncol(.) >= 3) mutate(.,
+      {if(ncol(.) == 3) mutate(.,
                                min = min(c_across(contains("sentence")), na.rm = T),
                                max = max(c_across(contains("sentence")), na.rm = T),
                                med = median(c_across(contains("sentence")), na.rm = T),
-                               mn = mean(c_across(contains("sentence")), na.rm = T))
+                               mn = mean(c_across(contains("sentence")), na.rm = T),
+                               r = (sentence1.pred/5)*255, 
+                               g = (sentence2.pred/5)*255, 
+                               b = (sentence3.pred/5)*255,
+                               rgbColor = rgb(r, g, b, maxColorValue = 255)
+      )
         else .} %>%
+    {if(ncol(.) >= 3) mutate(.,
+                             min = min(c_across(contains("sentence")), na.rm = T),
+                             max = max(c_across(contains("sentence")), na.rm = T),
+                             med = median(c_across(contains("sentence")), na.rm = T),
+                             mn = mean(c_across(contains("sentence")), na.rm = T)
+    )
+      else .} %>%
       as.data.frame() %>%
       {if(nrow(.) == nrow(mediumGrid)) bind_cols(., mediumGrid) %>% st_as_sf() else .}
   })
-  # observeEvent(surveyDataI(), {
-  #   browser()
-  # }, ignoreInit = T)
   
   # (INT) Map ---------------------------------------------------------------
   output$interpolationMap <- renderLeaflet({
@@ -985,7 +989,36 @@ server <- function(input, output, session){
         addLegend("bottomright", pal = continuous44Legend, values = -4:4,
                   title = "Difference",
                   opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE)))
+    }else if(colorColI() == "rgbColor"){
+      leafletProxy("interpolationMap") %>%
+        clearShapes() %>%
+        clearControls() %>%
+        addPolygons(data = datI() %>%
+                      st_transform(4326),
+                    weight = 1,
+                    color = ~rgbColor, # color by the literal values of the rgb color column
+                    fillColor = ~rgbColor,
+                    fillOpacity = 1) %>%
+        addLegend("bottomleft",
+                  pal = redLegend, values = 1:5,
+                  title = "Sentence 1",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE))) %>%
+        addLegend("topright",
+                  pal = greenLegend, values = 1:5,
+                  title = "Sentence 2",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE))) %>%
+        addLegend("bottomright",
+                  pal = blueLegend, values = 1:5,
+                  title = "Sentence 3",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE)))
     }else{
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
@@ -1000,7 +1033,8 @@ server <- function(input, output, session){
         addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
                   title = "Rating",
                   opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE)))
     }
   })
   
@@ -1022,7 +1056,36 @@ server <- function(input, output, session){
         addLegend("bottomright", pal = continuous44Legend, values = -4:4,
                   title = "Difference",
                   opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE)))
+    }else if(colorColI() == "rgbColor"){
+      leafletProxy("interpolationMap") %>%
+        clearShapes() %>%
+        clearControls() %>%
+        addPolygons(data = datI() %>%
+                      st_transform(4326),
+                    weight = 1,
+                    color = ~rgbColor, # color by the literal values of the rgb color column
+                    fillColor = ~rgbColor,
+                    fillOpacity = 1) %>%
+        addLegend("bottomleft",
+                  pal = redLegend, values = 1:5,
+                  title = "Sentence 1",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE))) %>%
+        addLegend("topright",
+                  pal = greenLegend, values = 1:5,
+                  title = "Sentence 2",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE))) %>%
+        addLegend("bottomright",
+                  pal = blueLegend, values = 1:5,
+                  title = "Sentence 3",
+                  opacity = 1,
+                  labFormat = labelFormat(transform = function(x) 
+                    sort(x, decreasing = TRUE)))
     }else{
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
@@ -1127,7 +1190,7 @@ server <- function(input, output, session){
     choices3 <- c("Sentence 1 ratings",
                   "Sentence 2 ratings",
                   "Sentence 3 ratings",
-                  #"RGB scale",
+                  "RGB scale",
                   "Mean rating",
                   "Median rating",
                   "Min rating",
@@ -1159,7 +1222,7 @@ server <- function(input, output, session){
                         choices = c("Sentence 1 ratings",
                                     "Sentence 2 ratings",
                                     "Sentence 3 ratings",
-                                    #"RGB scale",
+                                    "RGB scale",
                                     "Mean rating",
                                     "Median rating",
                                     "Min rating",
@@ -1199,18 +1262,11 @@ server <- function(input, output, session){
       colorColI("min")
     }else if(input$colorCriteriaInterpolation == "Max rating"){
       colorColI("max")
+    }else if(input$colorCriteriaInterpolation == "RGB scale"){
+      colorColI("rgbColor")
     }
     print(colorColI())
   })
-  
-  observeEvent(input$sentencesApplyI, {
-    if(input$sentencesApplyI > 3){
-      browser()
-    }
-  })
-  
-  
-  
   
   # (INT) Update sentence choices -------------------------------------------------
   # This observer listens to surveySentencesDataListI(), not surveyDataI(), since the latter is only updated when you click "Apply".
