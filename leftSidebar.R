@@ -71,7 +71,7 @@ LEFTSIDEBAR <- dashboardSidebar(
     hidden(menuItem("hiddenInterpolationMaps", tabName = "hiddenInterpolationMaps")),
     
     # HOW TO MODE ---------------------------------------------------
-    menuItem(text = "How to", expandedName = "howTo", 
+    menuItem(text = "How to use", expandedName = "howTo", 
              tabName = "howTo",
              icon = icon("info"), startExpanded = FALSE,
              p("")),
