@@ -89,12 +89,7 @@ prettyJoinSelector <- function(sentenceNum){
   return(pjs)
 }
 
-
 # Sentence choices --------------------------------------------------------
-## default sentence
-defaultSentence1 <- "I'm after bein' up there for five hours."
-
-
 # Sentence choices, in list
 getSentenceChoices <- function(inputList){ # function to get a list of sentence choices from a surveyData() list of data frames
   a <- bind_rows(lapply(inputList, as.data.frame)) %>%
