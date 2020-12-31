@@ -4,9 +4,10 @@
 # 31 December 2020
 
 # Load packages -----------------------------------------------------------
-library(shinydashboardPlus)
+library(devtools)
+#install_version("shinydashboardPlus", version = "0.7.5", repos = "http://cran.us.r-project.org")
+library(shinydashboardPlus) # AAA This is a MAJOR problem: shinydashboardPlus version 2.0.0.9000 is a breaking version. A lot of changes will have to be made to the code. It's documented in detail here: https://rinterface.github.io/shinydashboardPlus/news/index.html. See also GH issue #38. I included a line of code above to install the older version of shinydashboardPlus (the version that comes before the breaking changes.)
 library(shiny)
-
 
 # HT PTS ------------------------------------------------------------------
 howToPoints <- tabPanel("Point maps",
