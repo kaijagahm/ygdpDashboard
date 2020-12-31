@@ -28,9 +28,6 @@ library(sf) # for shapefile manipulation XXX
 library(reactlog) # for creating a reactive graph. More information here: https://rstudio.github.io/reactlog/
 source("dashboardFunctions.R") # custom-written functions and object definitions for use later in the app.
 
-# Define a default sentence -----------------------------------------------
-defaultSentence1 <- "I'm after bein' up there for five hours."
-
 # Load data for the app ---------------------------------------------------
 ## (PTS)
 load("data/points/snl.Rda") # snl stands for "sentences nested list". This is the data for the point map mode, organized in a nested list (split first by surveys, then by sentences)
@@ -250,7 +247,8 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
 
 # Server function ---------------------------------------------------------
 server <- function(input, output, session){
-
+  # Enable URL bookmarking
+  enableBookmarking(store = "url")
 
   # Update body tabs --------------------------------------------------------
   ## Here's where the hidden vs. non-hidden tabs thing explicitly comes into play.

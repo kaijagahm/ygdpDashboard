@@ -9,6 +9,8 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(dashboardthemes)
 
+# Define a default sentence -----------------------------------------------
+defaultSentence1 <- "I'm after bein' up there for five hours."
 
 # Tab children function ---------------------------------------------------
 convertMenuItem <- function(mi,tabName) {
