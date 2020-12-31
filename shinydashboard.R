@@ -17,14 +17,15 @@
 
 ## - the 'ignoreInit = T' argument is used a lot in `observeEvent()` calls. This argument means that when the observer is first created, its handler expression (i.e. the code that says what to DO after observing the condition) does not run, regardless of whether the triggering condition is true. Prevents weird side effects and unnecessary slowdown on app load.
 
+## - There are some places in the app where I took hacky shortcuts that made things work but that might trip you up if you try to modify seemingly-basic things about the app. I apologize in advance! I was learning this as I went. I've marked places that I think fall into this category with # AAA.
+
 # Load required packages (libraries) --------------------------------------
 library(here) # for writing filepaths relative to the root app directory
 library(shiny) # for... building a Shiny app :)
 library(dplyr) # for data manipulation with %>%
 library(stringr) # for string manipulation, find and replace, etc.
 library(leaflet) # for making dynamic and interactive maps
-#library(leaflet.extras) # XXX not sure what I used this for?
-library(sf) # for shapefile manipulation XXX
+library(sf) # for shapefile manipulation, e.g. st_drop_geometry()
 library(reactlog) # for creating a reactive graph. More information here: https://rstudio.github.io/reactlog/
 source("dashboardFunctions.R") # custom-written functions and object definitions for use later in the app.
 
@@ -34,7 +35,7 @@ load("data/points/snl.Rda") # snl stands for "sentences nested list". This is th
 
 ## (INT)
 # This is the data for interpolation mode. It's a list, with one interpolation (an sf object) per sentence.
-# I deal with it in three steps:
+# # AAA I deal with it in three steps:
 ## 1. Load the list, where each list element is an sf object (and therefore they all have the same hexagon geometries, which is redundant)
 load("data/interpolations/interpListMedium.Rda")
 
@@ -52,7 +53,6 @@ load("data/interpolations/surveySentencesTable.Rda")
 # Enable the reactlog if you want to visualize reactivity. If you do this, run the app and then in the console you can run shiny::reactlogShow() to pull up the reactlog. You have to start a new R session each time unless you also want to see past uses of the app. More on how to use the reactlog here: https://rstudio.github.io/reactlog/articles/reactlog.html
 #reactlog_enable() # un-comment this line to actually use the reactlog.
 
-
 # Load separate UI scripts ------------------------------------------------
 # I've separated out a few parts of the UI into separate scripts.
 # Note that this only works for code that doesn't depend on reactive values. I *should* have used Shiny Modules (https://shiny.rstudio.com/articles/modules.html), but I was intimidated, so I didn't.
@@ -60,7 +60,6 @@ source("header.R") # the dashboard header (title etc)
 source("leftSidebar.R") # the initial left sidebar def (before updating selectInputs etc)
 source("rightSidebar.R") # the initial right sidebar def (before updating selectInputs etc)
 source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
-
 
 # UI function -------------------------------------------------------------
 ui <- function(request){ # Defined this as a function so that URL bookmarking would work. It still doesn't. Alas. See issue #33.
@@ -186,7 +185,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                   # (INT)
                   tabPanel(title = "Interpolation map controls",
                            # Panel containing just a tab for display settings
-                           ## Kept as a tabsetPanel for consistency of code and because I was afaid to break something.
+                           ## Kept as a tabsetPanel for consistency of code and because I was afaid to break something. # AAA
                            tabsetPanel(id = "interpolationMapTabset",
                                        type = "tabs",
                                        tabPanel(
@@ -372,7 +371,7 @@ server <- function(input, output, session){
   # (PTS) leftRV ------------------------------------------------------------------
   # Selected sentences and ratings from left sidebar get stored in a reactiveValues obj.
   ## initial values
-  leftRV <- reactiveValues(chosenSentences = defaultSentence1, # defined at top of script
+  leftRV <- reactiveValues(chosenSentences = defaultSentence1, # defined in dashboardFunctions.R # AAA XXX
                            # initialize with all ratings selected
                            chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
   
@@ -426,26 +425,42 @@ server <- function(input, output, session){
   
   
   # (PTS) Data --------------------------------------------------------------
-  ## Unlike the reactiveValues objects above, which only update when the observer runs, ### XXX going to stop here and go through and label all the observers and reactives
+  ## Unlike the reactiveValues objects above, which only update when the observer runs, dat() is a reactive. It listens to: leftRV, rightRV, and surveyData().
+  ## Note the use of the `map2()` function for data filtering here. Applies elements of one vector/list to corresponding elements of another vector/list. Supremely useful.
   dat <- reactive({
-    surveyData()[leftRV$chosenSentences] %>%
-      lapply(., as.data.frame) %>%
-      map2(., 1:length(.), ~mutate(..1, whichSentence = paste0("sentence", ..2))) %>%
+    surveyData()[leftRV$chosenSentences] %>% # select the chosen sentences from the survey data
+      lapply(., as.data.frame) %>% # convert each sentence to a df
+      map2(., # first input: the list of df's fed in from the pipe above
+           1:length(.), # second input: a vector of numbers from 1 to length(.)
+           ~mutate(..1, # add a column called "whichSentence" to each df, with the corresponding number. This works because `surveyData()[leftRV$chosenSentences]` (above) subsets those sentences from the list *in order*
+                   whichSentence = paste0("sentence", ..2))
+           ) %>%
       # Filter by ratings for each sentence
-      map2(., leftRV$chosenRatings, ~filter(..1, rating %in% as.numeric(..2))) %>%
-      bind_rows(.id = NULL) %>% # now we have a single df, filtered by ratings.
-      mutate(rating = as.numeric(as.character(rating))) %>%
-      group_by(responseID) %>% # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
-      filter(n() == isolate(nSentences())) %>%
+      map2(., # first input: the list of df's fed in from the pipe above
+           leftRV$chosenRatings, # second input: the chosen ratings for each sentence
+           ~filter(..1, rating %in% as.numeric(..2))) %>% # filter each data frame by the ratings the user has selected *for that sentence*
+      bind_rows(.id = NULL) %>% # bind list into a single df, filtered by ratings.
+      mutate(rating = as.numeric(as.character(rating))) %>% # convert ratings to numeric
+      
+      # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
+      group_by(responseID) %>% 
+      filter(n() == isolate(nSentences())) %>% # only keep participants who have as many rows as there are sentences, i.e. not fewer.
       ungroup() %>%
+      
       #Filter by demography
-      {if(is.null(rightRV$ageButtons)) filter(., is.na(age) | age >= rightRV$ageSlider[1] &
-                                                age <= rightRV$ageSlider[2]) else .} %>%
-      {if(is.null(rightRV$ageSlider)) filter(., is.na(ageBin) | ageBin %in% rightRV$ageButtons) else .} %>%
+      ## each {} is a conditional pipe statement.
+      ## In the filtering statements, we explicitly keep the NA's. NA's are removed in the later rightRV$*NAs statements.
+      {if(is.null(rightRV$ageButtons)) # if the user filtered age using the slider...
+        filter(., is.na(age) | age >= rightRV$ageSlider[1] & 
+                 age <= rightRV$ageSlider[2]) else .} %>%
+      {if(is.null(rightRV$ageSlider))  # if the user filtered age using buttons...
+        filter(., is.na(ageBin) | ageBin %in% rightRV$ageButtons) else .} %>%
       filter(is.na(gender) | gender %in% rightRV$gender) %>%
       filter(is.na(raceCats) | raceCats %in% rightRV$race) %>%
       filter(is.na(education) | education %in% rightRV$education) %>%
-      {if(rightRV$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, don't need a separate test here for which tab is selected.
+      
+      # Remove NA's if the checkboxes are unchecked
+      {if(rightRV$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, don't need a separate test here for which age filter tab is selected--all rows that are NA for age will also be NA for ageBin.
       {if(rightRV$genderNAs == F) filter(., !is.na(gender)) else .} %>%
       {if(rightRV$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
       {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
@@ -454,20 +469,21 @@ server <- function(input, output, session){
   
   # The data that *doesn't* meet the criteria: all the responseID's except for the ones included in dat() (this is just a shortcut so I don't have to re-write all these filters backwards.)
   tad <- reactive({
-    req(dat())
+    req(dat()) # dat() must already exist for this to work
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
       bind_rows(.id = NULL) %>%
       filter(!(responseID %in% dat()$responseID)) %>% # people who were excluded from dat()
-      select(responseID, lat, long, label) %>%
-      distinct() %>%
-      mutate(lat = as.numeric(lat),
+      ## Note: this is where you could add additional filters to address GH issue #37
+      select(responseID, lat, long, label) %>% # we don't need their ratings of the various sentences, just their location.
+      distinct() %>% # only need one row per participant
+      mutate(lat = as.numeric(lat), # make sure lat and long are numeric before plotting
              long = as.numeric(long))
   },
   label = "rTad")
   
   # Wide format data (for mapping and coloring)
-  ## Calculated values: to be joined to wide format data
+  ## First we calculate stats on the selected sentence ratings for each participant
   calc <- reactive({ 
     dat() %>%
       select(responseID, whichSentence, rating) %>%
@@ -479,7 +495,7 @@ server <- function(input, output, session){
   },
   label = "rCalc")
   
-  ## Wide format data
+  ## Then we pivot dat() to wide format and combine it with calc()
   wideDat <- reactive({
     dat() %>%
       select(responseID, whichSentence, rating, lat, long, label) %>%
@@ -488,88 +504,115 @@ server <- function(input, output, session){
       left_join(calc(), by = "responseID") %>% # join calc
       mutate(lat = as.numeric(lat),
              long = as.numeric(long),
-             meetsCriteria = 5) %>% # so the color choices will work
-      {if(nSentences() > 1) mutate(., label = paste0(label, " <br> <b>Mean: </b> ", round(mn, 2), " <br> <b>Median: </b> ", md, " <br> <b>Min: </b> ", min, " <br> <b>Max: </b> ", max))else .} %>%
-      upgradeLabels(.)
+             # NOTE: this is something of a shortcut. AAA
+             # meetsCriteria is a TRUE/FALSE column. But because of the way I've set up the color palettes, I'm just assigning the meetsCriteria column to 5 so that the same color palette can be used, with one color standing for both 5 (on a scale of 1-5, when points are colored by the ratings for a single sentence), or "meets criteria" (when points are colored by whether they meet the criteria). 
+             # A more robust way of doing this would be to follow the method I used to recolor the hexagons in interpolation mode depending on the selected value of input$colorCriteriaInterpolation.
+             meetsCriteria = 5) %>%
+      # Add the calculated statistics to the popup labels for each point.
+      {if(nSentences() > 1) 
+        mutate(., label = paste0(label, " <br> <b>Mean: </b> ", 
+                                 round(mn, 2), " <br> <b>Median: </b> ", 
+                                 md, " <br> <b>Min: </b> ", min, 
+                                 " <br> <b>Max: </b> ", max)) else .} %>%
+      upgradeLabels(.) # format the labels nicely. Function defined in dashboardFunctions.R
   },
   label = "rWideDat")
   
+  # This was just a useful debugging tool; not at all necessary to the actual app.
   # observe({ # whenever dat() changes, print its dimensions.
   #   print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
   # },
   # label = "oDimDat")
   
   # (PTS) Map ---------------------------------------------------------------
+  # This initializes a basic map of the US, without any points on it.
   output$pointMap <- renderLeaflet({
     leaflet() %>%
       addProviderTiles(
         providers$CartoDB.Positron,
-        options = providerTileOptions(minZoom = 4)) %>% # no zooming out
-      setView(-96, 37.8, 4)
+        options = providerTileOptions(minZoom = 4)) %>% # Don't allow people to zoom out beyond 4
+      setView(-96, 37.8, 4) # Set initial view to the center of the continental US
   })
   
   # (PTS) Points on map -----------------------------------------------------
-  # Plot points
-  ## Re-plot when wideDat() changes
+  # Plot points onto the map. Points get re-plotted each time wideDat() changes.
   ### Data points
   observeEvent(wideDat(), {
-    if(nrow(wideDat()) > 0){
-      leafletProxy("pointMap") %>%
-        clearMarkers() %>%
-        addCircleMarkers(data = wideDat(), lat = ~lat, lng = ~long,
-                         popup = ~label,
+    if(nrow(wideDat()) > 0){ # if there are at least some points that meet the criteria...
+      leafletProxy("pointMap") %>% # we use leafletProxy() to modify the existing "pointMap" object, instead of re-drawing the whole map.
+        clearMarkers() %>% # remove any existing point markers
+        # Note that in leaflet, markers are circles, not points; they have a border and fill by default
+        addCircleMarkers(data = wideDat(), # take data from wideDat()
+                         lat = ~lat,
+                         lng = ~long,
+                         popup = ~label, # use the 'label' column for the point popups
+                         # The continuousBlueYellow palette is defined in dashboardFunctions.R
+                         # eval(as.symbol()) allows us to use the character vector in the colorCol() reactiveVal as a column name within the ~ formula.
                          fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
+                         weight = 0.5, # width of the point border
+                         radius = 8, # size of the points
+                         opacity = 1, # opacity of the point border
+                         fillOpacity = 0.8) %>% # opacity of the point fill
+        # Add circle markers for the points that *don't* meet the criteria.
+        addCircleMarkers(data = tad(), 
+                         lat = ~lat, lng = ~long,
+                         popup = ~label,
+                         fillColor = "black",
+                         color = "black",
                          weight = 0.5,
-                         radius = 8,
+                         radius = 2, # make the black points really small
                          opacity = 1,
-                         fillOpacity = 0.8) %>%
-        addCircleMarkers(data = tad(), 
-                         lat = ~lat, lng = ~long,
-                         popup = ~label,
-                         fillColor = "black",
-                         color = "black",
-                         weight = 0.5,
-                         radius = 2, opacity = 1,
                          fillOpacity = 1,
+                         # We define a "group" for these points in order to take advantage of the built-in leaflet legend functionality.
                          group = "Show points that don't meet selected criteria")
-    }else{
+    }else{ # if all points fail to meet the criteria, then we plot only the black points.
       leafletProxy("pointMap") %>%
-        clearMarkers() %>%
+        clearMarkers() %>% # remove any markers
         addCircleMarkers(data = tad(), 
                          lat = ~lat, lng = ~long,
                          popup = ~label,
                          fillColor = "black",
                          color = "black",
-                         weight = 0.5,
+                         weight = 0.5, # width of the border
                          radius = 2, opacity = 1,
                          fillOpacity = 1,
                          group = "Show points that don't meet selected criteria")
     }
   },
   label = "oePointMapPoints")
+  
   ### Controls
   observeEvent(wideDat(), {
+    # If we're coloring by "meets criteria", then we add a checkbox control only, and no color legend.
     if(colorCol() == "meetsCriteria"){
       leafletProxy("pointMap") %>%
         clearControls() %>%
         addLayersControl(
           overlayGroups = "Show points that don't meet selected criteria",
-          options = layersControlOptions(collapsed = F)) 
+          options = layersControlOptions(collapsed = F)
+          ) 
+      # If we're coloring by individual sentence ratings, then we add a checkbox control and also a color legend.
     }else{
       leafletProxy("pointMap") %>%
         clearControls() %>%
         addLayersControl(
           overlayGroups = "Show points that don't meet selected criteria",
           options = layersControlOptions(collapsed = F)) %>%
-        addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
+        # To get the colors in the right order, we have to use a reversed color palette, continuousBlueYellowLegend, defined in dashboardFunctions.R, AND we have to transform the labels to be in decreasing order
+        addLegend("bottomright", pal = continuousBlueYellowLegend, 
+                  values = 1:5,
                   title = "Rating",
                   opacity = 1,
-                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
+                  # transform labels to be in decreasing order
+                  labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)
+                                          )
+                  )
     }
   },
   label = "oePointMapControls")
   
+  # XXX START HERE WITH COMMENTING/DOCUMENTING
   ## Change point colors
   ## Re-plot when input$pointDisplaySettingsApply is clicked
   observeEvent(input$pointDisplaySettingsApply, {
@@ -745,8 +788,6 @@ server <- function(input, output, session){
     }
   },
   label = "oeUpdateAgeFilters")
-  ### XXX start here with labeling reactives/observers. All reactives/observers below this point need labels.
-  
   
   # (PTS) Update sentence choices -------------------------------------------------
   # This observer listens to surveySentencesDataList(), not surveyData(), since the latter is only updated when you click "Apply".
@@ -765,10 +806,11 @@ server <- function(input, output, session){
                            choices = getSentenceChoices(surveySentencesDataList()),
                            selected = getSentenceChoices(surveySentencesDataList())[[1]][[1]])
     })
-  })
+  },
+  label = "oeUpdateSentenceChoices")
   
   # (PTS) Update color criteria choices -------------------------------------------
-  observeEvent(input$sentencesApply|input$sentencesReset, { ## BBB
+  observeEvent(input$sentencesApply|input$sentencesReset, {
     val <- input$colorCriteriaPoints
     choices1 <- c("Sentence 1 ratings", "Selected criteria")
     
@@ -786,10 +828,13 @@ server <- function(input, output, session){
                                     "Selected criteria"),
                         selected = val)
     }
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeUpdateColorCriteriaPoints")
   
   # Translate input$colorCriteriaPoints into the names of the columns in wideDat()
-  colorCol <- reactiveVal("sentence1") # initial value is sentence1
+  colorCol <- reactiveVal({"sentence1"}, # initial value is sentence1
+                          label = "rvColorCol") 
   observeEvent(input$colorCriteriaPoints, { # reassign the value based on the input
     if(grepl("ratings", input$colorCriteriaPoints)){
       colorCol(input$colorCriteriaPoints %>% 
@@ -807,7 +852,10 @@ server <- function(input, output, session){
     }else if(input$colorCriteriaPoints == "Max rating"){
       colorCol("max")
     }
-  })
+  },
+  label = "oeUpdateColorCol")
+  
+   ### XXX START HERE WITH THE LABELING
   
   # INTERPOLATION MODE ------------------------------------------------------
   # (INT) sentence counters -------------------------------------------------
