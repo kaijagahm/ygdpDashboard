@@ -3,7 +3,7 @@ source("dashboardFunctions.R")
 
 HEADER <- dashboardHeaderPlus(
   title = "YGDP Data Explorer",
-  tags$li(class = "dropdown", bookmarkButton(label = "Bookmark app state", icon = )),
+  tags$li(class = "dropdown", bookmarkButton(label = "Bookmark app state")),
   enable_rightsidebar = TRUE,
   rightSidebarIcon = "sliders"
 )
