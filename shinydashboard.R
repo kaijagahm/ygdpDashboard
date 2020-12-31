@@ -1,264 +1,128 @@
-# Shinydashboard test
-# Load data
-library(here)
-library(shiny)
-library(dplyr)
-library(stringr)
-library(leaflet)
-library(leaflet.extras)
-library(sf)
-load("data/points/snl.Rda")
+# Intro ------------------------------------------------------------------
+# Welcome! This is the main script to generate the ygdpDashboard Shiny app. It calls a couple of other scripts that define static parts of the app (left sidebar, etc.), but this is where the bulk of the code is located.
+# Author: Kaija Gahm
+# Contributor: Ian Neidel
+# Created: June - December 2020
+# Github repository: https://github.com/kaijagahm/ygdpDashboard
+# Issue tracker: https://github.com/kaijagahm/ygdpDashboard/issues
+
+# Some notes on the code --------------------------------------------------
+## - I use consistent acronyms in this script to help organize the code. (PTS) refers to "points mode" (i.e. the tab of the app that shows a map with points on it). (INT) refers to "interpolation mode". (HT) refers to the "How to use" tab. (AB) refers to the "About" tab. #XXX add (AB) to the "about" sections!
+
+## - "XXX" is a marker I use when there is something in the code I want to come back to and fix. It's easy to find with Command + F in RStudio. 
+
+## - Divider bars separate the sections of this code. RStudio automatically recognizes those as section breaks and uses them to create a very useful **code outline**. You can access it by clicking on the "Show document outline" button (a bunch of stacked horizontal lines) at the top righthand corner of the script panel in RStudio, or with the keyboard shortcut Shift + Command + O (on a Mac). This outline is where the (PTS), (INT), etc. abbreviations really come in handy.
+
+# Load required packages (libraries) --------------------------------------
+library(here) # for writing filepaths relative to the root app directory
+library(shiny) # for... building a Shiny app :)
+library(dplyr) # for data manipulation with %>%
+library(stringr) # for string manipulation, find and replace, etc.
+library(leaflet) # for making dynamic and interactive maps
+library(leaflet.extras) # XXX not sure what I used this for?
+library(sf) # for shapefile manipulation XXX
+library(reactlog) # for creating a reactive graph. More information here: https://rstudio.github.io/reactlog/
+source("dashboardFunctions.R") # custom-written functions and object definitions for use later in the app.
+
+# Load data for the app ---------------------------------------------------
+## (PTS)
+load("data/points/snl.Rda") # snl stands for "sentences nested list". This is the data for the point map mode, organized in a nested list (split first by surveys, then by sentences)
+
+## (INT)
+# This is the data for interpolation mode. It's a list, with one interpolation (an sf object) per sentence.
+# I deal with it in three steps:
+## 1. Load the list, where each list element is an sf object (and therefore they all have the same hexagon geometries, which is redundant)
 load("data/interpolations/interpListMedium.Rda")
-mediumGrid <- interpListMedium[["I'm after forgettin' the name of my favorite bakery."]]
+
+## 2. Grab an initial grid that's just one element of this list.
+mediumGrid <- interpListMedium[[defaultSentence1]] # This is the "initial" interpolation grid, shown when the app loads. `defaultSentence1` is defined in dashboardFunctions.R
+
+## 3. Drop the geometry column from all of the list elements, leaving only the predicted values for each sentence.
 interpListMedium <- lapply(interpListMedium, st_drop_geometry)
+
+# This is a reference table to be used in defining the menu choices for interpolation mode.
+## For points mode, we had a nested list, split first by surveys and then by sentences. For interpolation mode, for efficiency, I have a flat list, so this table cross-references surveys and sentences to allow sentence choices to display according to which survey is selected.
 load("data/interpolations/surveySentencesTable.Rda")
-library(reactlog)
 
+# Use the reactlog --------------------------------------------------------
 # Enable the reactlog if you want to visualize reactivity. If you do this, run the app and then in the console you can run shiny::reactlogShow() to pull up the reactlog. You have to start a new R session each time unless you also want to see past uses of the app. More on how to use the reactlog here: https://rstudio.github.io/reactlog/articles/reactlog.html
-#reactlog_enable()
+#reactlog_enable() # un-comment this line to actually use the reactlog.
 
-# Load the functions and libraries
-source("dashboardFunctions.R")
 
-# Load the different parts of the UI, which I've separated out into separate scripts to make them cleaner
-source("header.R")
-source("leftSidebar.R")
-source("rightSidebar.R")
+# Load separate UI scripts ------------------------------------------------
+# I've separated out a few parts of the UI into separate scripts.
+# Note that this only works for code that doesn't depend on reactive values. I *should* have used Shiny Modules (https://shiny.rstudio.com/articles/modules.html), but I was intimidated, so I didn't.
+source("header.R") # the dashboard header (title etc)
+source("leftSidebar.R") # the initial left sidebar def (before updating selectInputs etc)
+source("rightSidebar.R") # the initial right sidebar def (before updating selectInputs etc)
+source("howToContent.R") # text and images for the 'how to use' tab (HT)
 
-# To do
-# Add additional label information to the points that don't meet the criteria.
-# Fix bugs:
-#   Sometimes, but not always, when you select survey 9 or survey 7 there's an error.
-#   Sometimes there's an error when the filters are set a certain way, such as moving the age slider up to ~90-100.
-#   I suspect this has something to do with the data having 0 rows.
-# Confirmed--definitely has to do with the data having 0 rows. Maybe some if/else logic in the dat() and datI() definitions would help.
 
-ui <- function(request){ # beginning of UI function
+# Define the UI function --------------------------------------------------
+ui <- function(request){ # Defined this as a function so that URL bookmarking would work. It still doesn't. Alas. See issue #33.
   tagList(dashboardPagePlus(
     tags$head(
       tags$style(
-        HTML(
+        # Removes dark space at the top of the right sidebar
+        # code from https://stackoverflow.com/questions/59289622/remove-the-dark-space-at-the-top-of-the-right-sidebar-in-a-shinydashboardplus
+        HTML( 
           ".control-sidebar-tabs {display:none;}"
         )
       )
     ),
     
-    useShinyjs(),
+    useShinyjs(), # enables use of javascript in the code.
     
     
     # HEADER ------------------------------------------------------------------
-    header = HEADER,
+    header = HEADER, # HEADER is defined in header.R.
     
     
     # LEFT SIDEBAR ------------------------------------------------------------
-    sidebar = LEFTSIDEBAR,
+    sidebar = LEFTSIDEBAR, # LEFTSIDEBAR is defined in leftSidebar.R
     
     
     # BODY --------------------------------------------------------------------
     body = dashboardBody(
-      # remove icon to close right sidebar: keep r sidebar permanently open
+      # Keep right sidebar open by removing the icon to close it
       # Code from: https://stackoverflow.com/questions/63837262/is-it-possible-to-fix-the-left-and-right-sidebars-in-shinydashboardplus-to-perma/
       tags$script(HTML( 
         '$("body > div > header > nav > div:nth-child(4) > ul > li > a").hide();
          document.getElementsByClassName("sidebar-toggle")[0].style.visibility = "hidden";'
       )),
-      shinyDashboardThemes( # why is theme defined in body, not at top?
+      
+      # Define the theme for the dashboard
+      shinyDashboardThemes(
         theme = "grey_dark"
       ),
-      tabItems( # different outputs to be shown depending on which menu item is selected in the lefthand menu
+      
+
+      # Body tabs ---------------------------------------------------------------
+      # A different body tab (i.e. different content) is shown depending on which menu item is selected in the left sidebar
+      tabItems(
+        # (PTS)
         tabItem(tabName = "hiddenPointMaps",
                 leafletOutput("pointMap", height = "525px"),
                 br(),
                 uiOutput("pointMapResetZoom")
         ),
+        # (INT)
         tabItem(tabName = "hiddenInterpolationMaps",
                 leafletOutput("interpolationMap", height = "525px"),
                 br(),
                 uiOutput("interpolationMapResetZoom")
         ),
+        # (HT)
         tabItem(tabName = "hiddenHowTo",
                 br(),
                 tabBox(width = 12,
                        height = 12,
-                       # The id lets us use input$howToBox on the server to find the current tab
+                       # id lets us use input$howToBox in server to get current tab
                        id = "howToBox",
-                       ## How to use points mode
-                       tabPanel("Point maps",
-                                div(style = 'overflow-y:scroll;height:500px',
-                                    boxPlus(title = "Left sidebar",
-                                            width = 12,
-                                            column(width = 4,
-                                                   imageOutput("PTSLeftSidebar", 
-                                                               height = "50%")
-                                            ),
-                                            column(width = 8,
-                                                   div(style = "font-size:16px;",
-                                                       tags$ol(
-                                                         tags$li("Select a survey. The sentence choices will update dynamically."), 
-                                                         br(),
-                                                         tags$li("Select a sentence. Sentences are organized by grammatical phenomenon."), 
-                                                         br(),
-                                                         tags$li("You can use the rating buttons to restrict the data by participants' chosen ratings for the selected sentence. The default is to show all ratings."),
-                                                         br(),
-                                                         tags$li("To add more sentences, click 'Add a sentence.' Use the corresponding sentence and rating selectors that appear, as described in (2) and (3)."),
-                                                         br(),
-                                                         tags$li("To see your choices on the map, click 'Apply.'"),
-                                                         br(),
-                                                         tags$li("To reset the sentence and rating selections, use 'Reset all.' Note that after you reset the sentences, you will have to click 'Apply' again for your changes to be shown.")
-                                                       )
-                                                   )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = F,
-                                            closable = F),
-                                    boxPlus(title = "Map",
-                                            width = 12,
-                                            imageOutput("PTSMap", 
-                                                        height = "50%"),
-                                            br(),
-                                            div(
-                                              style = "font-size:16px;",
-                                              tags$ol(
-                                                tags$li("Each point on the map represents a single survey participant."), 
-                                                br(),
-                                                tags$li("When several points are located in the same city, they have been jittered very slightly for visibility. You may have to zoom in very far to distinguish the points from each other. Try zooming in on New York City, for example!"), 
-                                                br(),
-                                                tags$li("Large, colored points match the criteria that you have chosen: selected ratings (left sidebar) and demographic criteria (right sidebar). Depending on your selection in the 'Display settings' tab (see the next section of this how-to), the points may be colored by whether or not they meet the criteria, or by participants' ratings of the sentences. If the latter, then a legend at the bottom corner of the map will key the map colors."),
-                                                br(),
-                                                tags$li("Small, black points do not meet the criteria that you have selected in the left and right sidebars."),
-                                                br(),
-                                                tags$li("You can toggle whether to display these small, black points using the checkbox at the top of the map."),
-                                                br(),
-                                                tags$li("Zoom in and out using the map controls or your mouse. Pan around the map by clicking and dragging."),
-                                                br(),
-                                                tags$li("Reset the map zoom and center focus using the reset button below the map."),
-                                                br(),
-                                                tags$li("Click on a point to see demographic information about that participant, as well as their ratings of each selected sentence.")
-                                              )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = T,
-                                            closable = F),
-                                    boxPlus(title = "Right sidebar",
-                                            width = 12,
-                                            fluidRow(
-                                              column(
-                                                width = 8,
-                                                div(
-                                                  style = "font-size:16px;",
-                                                  tags$ol(
-                                                    tags$li("In the 'Filter' tab of the right sidebar, you can filter the points you'd like to display by various demographic categories."), 
-                                                    br(),
-                                                    tags$li("There are two ways to filter by age: with a continuous slider, or by categorical age bins. You can toggle between these with the 'range' and 'bins' tabs."), 
-                                                    br(),
-                                                    tags$li("For each demographic category, you can choose to exclude missing values (NA's). Some participants declined to provide demographic information, resulting in these missing values."),
-                                                    br(),
-                                                    tags$li("Within each demographic category dropdown menu, you can use the 'Select All' and 'Deselect All' options to make it easier to select multiple categories."),
-                                                    br(),
-                                                    tags$li("To update the map to reflect your selections, use the 'Apply' button."),
-                                                    br(),
-                                                    tags$li("Use the 'Reset' button to reset the demographic filters to their original values. Note that you will have to click 'Apply' again after resetting the filters to apply your changes.")
-                                                  )
-                                                )
-                                              ),
-                                              column(
-                                                width = 4,
-                                                
-                                                imageOutput("PTSRightSidebar",
-                                                            height = "50%")
-                                              )
-                                            ),
-                                            br(),
-                                            fluidRow(
-                                              column(
-                                                width = 8,
-                                                p("here is how you use the right sidebar display settings")
-                                              ),
-                                              column(
-                                                width = 4,
-                                                imageOutput("PTSDisplaySettings",
-                                                            height = "50%")
-                                              )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = T,
-                                            closable = F)
-                                )
-                       ),
-                       ## How to use interpolation mode
-                       tabPanel("Interpolation maps",
-                                div(style = 'overflow-y:scroll;height:500px',
-                                    boxPlus(title = "Left sidebar",
-                                            width = 12,
-                                            column(width = 4,
-                                                   imageOutput("INTLeftSidebar", 
-                                                               height = "50%")
-                                            ),
-                                            column(width = 8,
-                                                   div(style = "font-size:16px;",
-                                                       tags$ol(
-                                                         tags$li("Select a survey. The sentence choices will update dynamically."), 
-                                                         br(),
-                                                         tags$li("Select a sentence. Sentences are organized by grammatical phenomenon."), 
-                                                         br(),
-                                                         tags$li("To add more sentences, click 'Add a sentence.' Use the corresponding sentence selector that appears, as described in (2)."),
-                                                         br(),
-                                                         tags$li("To see your choices on the map, click 'Apply.'"),
-                                                         br(),
-                                                         tags$li("To reset the sentence and rating selections, use 'Reset all.' Note that after you reset the sentences, you will have to click 'Apply' again for your changes to be shown.")
-                                                       )
-                                                   )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = F,
-                                            closable = F),
-                                    boxPlus(title = "Map",
-                                            width = 12,
-                                            imageOutput("INTMap", 
-                                                        height = "50%"),
-                                            br(),
-                                            div(
-                                              style = "font-size:16px;",
-                                              tags$ol(
-                                                tags$li("The map is divided into a grid of hexagons. Point ratings have been interpolated to create a continuous surface, and then each hexagon is colored according to the predicted interpolation value at its centroid."), ## Check whether this is averaged or just sampled
-                                                br(),
-                                                tags$li("The legend provides a key to the hexagon colors. The scale is from 1 to 5 if the map is set to display ratings for a single sentence or aggregate statistics for more than one sentence, or from -4 to 4 if the map is set to display the difference between the ratings for two different sentences."), 
-                                                br(),
-                                                tags$li("Zoom in and out using the map controls or your mouse. Pan around the map by clicking and dragging."),
-                                                br(),
-                                                tags$li("Reset the map zoom and center focus using the reset button below the map.")
-                                              )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = T,
-                                            closable = F),
-                                    boxPlus(title = "Right sidebar",
-                                            width = 12,
-                                            fluidRow(
-                                              column(
-                                                width = 8,
-                                                div(
-                                                  style = "font-size:16px;",
-                                                  tags$ol(
-                                                    tags$li("Select a method for coloring the hexagons. If one sentence is selected, you can only color by the ratings for that sentence. If two sentences are selected, you can color by the ratings for either sentence, or by the difference between the sentences for each hexagon, or by aggregate statistics like that minimum, maximum, mean, or median. If more than two sentences are selected, the difference options go away."), 
-                                                    br(),
-                                                    tags$li("Use the 'Apply' button to update the map to reflect your changes.")
-                                                  )
-                                                )
-                                              ),
-                                              column(
-                                                width = 4,
-                                                
-                                                imageOutput("INTDisplaySettings",
-                                                            height = "50%")
-                                              )
-                                            ),
-                                            collapsible = T,
-                                            collapsed = T,
-                                            closable = F)
-                                )
-                                
-                       )
+                       ## (HT PTS)
+                       howToPoints, # defined in howToContent.R
+                       ## (HT INT)
+                       howToInterpolation # defined in howToContent.R
                 )
         ),
         tabItem(tabName = "hiddenAbout",
