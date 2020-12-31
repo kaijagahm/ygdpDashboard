@@ -23,7 +23,7 @@ library(shiny) # for... building a Shiny app :)
 library(dplyr) # for data manipulation with %>%
 library(stringr) # for string manipulation, find and replace, etc.
 library(leaflet) # for making dynamic and interactive maps
-library(leaflet.extras) # XXX not sure what I used this for?
+#library(leaflet.extras) # XXX not sure what I used this for?
 library(sf) # for shapefile manipulation XXX
 library(reactlog) # for creating a reactive graph. More information here: https://rstudio.github.io/reactlog/
 source("dashboardFunctions.R") # custom-written functions and object definitions for use later in the app.
