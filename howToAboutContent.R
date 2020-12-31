@@ -1,4 +1,4 @@
-# Content for the "How to use" (HT) tab of the YGDP dashboard. 
+# Content for the "How to use" (HT) and "About" (AB) tabs of the YGDP dashboard. 
 # Since this is text and images and it doesn't use any reactive values, I've separated it out into its own script to avoid making shinydashboard.R really long.
 # Author: Kaija Gahm
 # 31 December 2020
@@ -8,7 +8,7 @@ library(shinydashboardPlus)
 library(shiny)
 
 
-# PTS ---------------------------------------------------------------------
+# HT PTS ------------------------------------------------------------------
 howToPoints <- tabPanel("Point maps",
                         div(style = 'overflow-y:scroll;height:500px',
                             boxPlus(title = "Left sidebar",
@@ -113,7 +113,7 @@ howToPoints <- tabPanel("Point maps",
 )
 
 
-# INT ---------------------------------------------------------------------
+# HT INT ------------------------------------------------------------------
 howToInterpolation <- tabPanel("Interpolation maps",
                                div(style = 'overflow-y:scroll;height:500px',
                                    boxPlus(title = "Left sidebar",
@@ -187,3 +187,20 @@ howToInterpolation <- tabPanel("Interpolation maps",
                                )
                                
 )
+
+# AB YGDP -----------------------------------------------------------------
+aboutYGDP <- tabPanel("About the YGDP",
+                      div(style = 'overflow-y:scroll;height:500px',
+                          p("The Yale Grammatical Diversity Project (YGDP) is a group of researchers (including professors, grad students, undergrads, and even high school sudents), based in the Department of Linguistics at Yale University. We study syntax diversity in varieties of U.S. English. We use online surveys to collect acceptability judgments about sentences representing a variety of grammatical constructions. We analyze the results in scholarly publications, articles on our website, and other public-facing outputs like this dashboard.")
+                      )
+)
+
+# AB Surveys --------------------------------------------------------------
+aboutSurveys <- tabPanel("About the surveys",
+                        div(style = 'overflow-y:scroll;height:500px',
+                            p("We administer surveys through Amazon Mechanical Turk (AMT). On each survey, we make it clear to participants that we are looking for their judgments on informal, casual, speech, not their opinions about how 'proper' English should be spoken. Then we present them with approximately 45 sentences, one at a time, and ask them to rate each sentence on a scale of 1 (totally unacceptable, even in informal settings) to 5 (totally acceptable sentence)."),
+                            p("On each survey, we mix up the sentences, testing many different constructions at once so that participants aren't seeing similar sentences over and over. But we still try to include enough similar sentences of the same type so that we can make statistical inferences about the results."),
+                            p("We also collect some demographic information about our survey participants, which is what goes into creating the demographic filters that you see in the righthand sidebar for the point map mode in this app.")
+                        )
+)
+
