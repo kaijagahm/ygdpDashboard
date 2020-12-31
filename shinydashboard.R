@@ -13,6 +13,10 @@
 
 ## - Divider bars separate the sections of this code. RStudio automatically recognizes those as section breaks and uses them to create a very useful **code outline**. You can access it by clicking on the "Show document outline" button (a bunch of stacked horizontal lines) at the top righthand corner of the script panel in RStudio, or with the keyboard shortcut Shift + Command + O (on a Mac). This outline is where the (PTS), (INT), etc. abbreviations really come in handy.
 
+## - Common formatting abbreviations: `br()` inserts a line break. `div()` creates an html div, which can encompass other Shiny or html elements. `hr()` creates a horizontal rule/line to separate sections. `a()` creates a hyperlink. `p()` creates a paragraph of text.
+
+## - the 'ignoreInit = T' argument is used a lot in `observeEvent()` calls. This argument means that when the observer is first created, its handler expression (i.e. the code that says what to DO after observing the condition) does not run, regardless of whether the triggering condition is true. Prevents weird side effects and unnecessary slowdown on app load.
+
 # Load required packages (libraries) --------------------------------------
 library(here) # for writing filepaths relative to the root app directory
 library(shiny) # for... building a Shiny app :)
@@ -23,6 +27,9 @@ library(leaflet.extras) # XXX not sure what I used this for?
 library(sf) # for shapefile manipulation XXX
 library(reactlog) # for creating a reactive graph. More information here: https://rstudio.github.io/reactlog/
 source("dashboardFunctions.R") # custom-written functions and object definitions for use later in the app.
+
+# Define a default sentence -----------------------------------------------
+defaultSentence1 <- "I'm after bein' up there for five hours."
 
 # Load data for the app ---------------------------------------------------
 ## (PTS)
@@ -35,7 +42,7 @@ load("data/points/snl.Rda") # snl stands for "sentences nested list". This is th
 load("data/interpolations/interpListMedium.Rda")
 
 ## 2. Grab an initial grid that's just one element of this list.
-mediumGrid <- interpListMedium[[defaultSentence1]] # This is the "initial" interpolation grid, shown when the app loads. `defaultSentence1` is defined in dashboardFunctions.R
+mediumGrid <- interpListMedium[[defaultSentence1]] # This is the "initial" interpolation grid, shown when the app loads.
 
 ## 3. Drop the geometry column from all of the list elements, leaving only the predicted values for each sentence.
 interpListMedium <- lapply(interpListMedium, st_drop_geometry)
@@ -55,10 +62,10 @@ load("data/interpolations/surveySentencesTable.Rda")
 source("header.R") # the dashboard header (title etc)
 source("leftSidebar.R") # the initial left sidebar def (before updating selectInputs etc)
 source("rightSidebar.R") # the initial right sidebar def (before updating selectInputs etc)
-source("howToContent.R") # text and images for the 'how to use' tab (HT)
+source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
 
 
-# Define the UI function --------------------------------------------------
+# UI function -------------------------------------------------------------
 ui <- function(request){ # Defined this as a function so that URL bookmarking would work. It still doesn't. Alas. See issue #33.
   tagList(dashboardPagePlus(
     tags$head(
@@ -96,53 +103,44 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
         theme = "grey_dark"
       ),
       
-
       # Body tabs ---------------------------------------------------------------
       # A different body tab (i.e. different content) is shown depending on which menu item is selected in the left sidebar
+      # The hidden menu items are a hacky solution to fix a problem where tabs were not hiding/showing correctly. I documented the problem and solution in more detail here: https://community.rstudio.com/t/sidebaritemexpanded-only-works-when-tab-is-closed-not-when-switching-tabs/89246
       tabItems(
         # (PTS)
         tabItem(tabName = "hiddenPointMaps",
-                leafletOutput("pointMap", height = "525px"),
+                leafletOutput("pointMap", height = "525px"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
                 br(),
-                uiOutput("pointMapResetZoom")
+                uiOutput("pointMapResetZoom") # button to reset map zoom
         ),
         # (INT)
         tabItem(tabName = "hiddenInterpolationMaps",
-                leafletOutput("interpolationMap", height = "525px"),
+                leafletOutput("interpolationMap", height = "525px"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
                 br(),
-                uiOutput("interpolationMapResetZoom")
+                uiOutput("interpolationMapResetZoom") # button to reset map zoom
         ),
         # (HT)
         tabItem(tabName = "hiddenHowTo",
                 br(),
-                tabBox(width = 12,
+                tabBox(width = 12, # a content box with tabs
                        height = 12,
                        # id lets us use input$howToBox in server to get current tab
                        id = "howToBox",
                        ## (HT PTS)
-                       howToPoints, # defined in howToContent.R
+                       howToPoints, # defined in howToAboutContent.R
                        ## (HT INT)
-                       howToInterpolation # defined in howToContent.R
+                       howToInterpolation # defined in howToAboutContent.R
                 )
         ),
+        # (AB)
         tabItem(tabName = "hiddenAbout",
-                tabBox(
+                tabBox( # a content box with tabs
                   width = 12,
                   height = 12,
                   id = "aboutBox",
                   ## About the YGDP
-                  tabPanel("About the YGDP",
-                           div(style = 'overflow-y:scroll;height:500px',
-                               p("The Yale Grammatical Diversity Project (YGDP) is a group of researchers (including professors, grad students, undergrads, and even high school sudents), based in the Department of Linguistics at Yale University. We study syntax diversity in varieties of U.S. English. We use online surveys to collect acceptability judgments about sentences representing a variety of grammatical constructions. We analyze the results in scholarly publications, articles on our website, and other public-facing outputs like this dashboard.")
-                           )
-                  ),
-                  tabPanel("About the surveys",
-                           div(style = 'overflow-y:scroll;height:500px',
-                               p("We administer surveys through Amazon Mechanical Turk (AMT). On each survey, we make it clear to participants that we are looking for their judgments on informal, casual, speech, not their opinions about how 'proper' English should be spoken. Then we present them with approximately 45 sentences, one at a time, and ask them to rate each sentence on a scale of 1 (totally unacceptable, even in informal settings) to 5 (totally acceptable sentence)."),
-                               p("On each survey, we mix up the sentences, testing many different constructions at once so that participants aren't seeing similar sentences over and over. But we still try to include enough similar sentences of the same type so that we can make statistical inferences about the results."),
-                               p("We also collect some demographic information about our survey participants, which is what goes into creating the demographic filters that you see in the righthand sidebar for the point map mode in this app.")
-                           )
-                  )
+                  aboutYGDP, # defined in howToAboutContent.R
+                  aboutSurveys # defined in howToAboutContent.R
                 )
         )
       )
@@ -151,20 +149,23 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # RIGHT SIDEBAR -----------------------------------------------------------
     rightsidebar = rightSidebar(
-      background = "dark",
+      background = "dark", # to match body style
       title = "Right Sidebar",
       # Tabset for the right sidebar: switch between PTS/INT
       tabsetPanel(id = "rightSidebarTabset",
-                  type = "hidden", # we don't want to see these tabs
+                  type = "hidden", # Switch programmatically; hide tabs
                   # (PTS)
                   tabPanel(title = "Point map controls",
+                           # Panel containing tabs for filters and display settings
                            tabsetPanel(id = "pointMapTabset",
                                        type = "tabs",
                                        tabPanel(title = "Filter",
+                                                # Widgets defined in rightSidebar.R
                                                 ageWidget,
                                                 raceWidget,
                                                 genderWidget,
                                                 educationWidget,
+                                                # The divs here put the buttons next to each other
                                                 div(style = "display:inline-block", 
                                                     actionButton("pointFiltersReset", "Reset",
                                                                  style = "background-color: #4AA8F7")
@@ -178,7 +179,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                 br(),
                                                 selectInput("colorCriteriaPoints",
                                                             label = "Color points by:",
-                                                            choices = c("Sentence 1 ratings", "Selected criteria"),
+                                                            choices = c("Sentence 1 ratings", "Selected criteria"), # this will be updated for more sentences in the server
                                                             multiple = F),
                                                 div(style = "display:inline-block",
                                                     actionButton("pointDisplaySettingsApply", "Apply",
@@ -187,6 +188,8 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                   ),
                   # (INT)
                   tabPanel(title = "Interpolation map controls",
+                           # Panel containing just a tab for display settings
+                           ## Kept as a tabsetPanel for consistency of code and because I was afaid to break something.
                            tabsetPanel(id = "interpolationMapTabset",
                                        type = "tabs",
                                        tabPanel(
@@ -194,7 +197,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                          br(),
                                          selectInput("colorCriteriaInterpolation",
                                                      label = "Show:",
-                                                     choices = c("Sentence 1 ratings"),
+                                                     choices = c("Sentence 1 ratings"), # updated for more sentences in server
                                                      multiple = F),
                                          div(style = "display:inline-block",
                                              actionButton("interpolationDisplaySettingsApply", "Apply",
@@ -204,21 +207,24 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                   ),
                   # (HT)
                   tabPanel(title = "How to controls",
+                           # Again, this maybe doesn't need to be a tabsetPanel since there's only one tab, but I was afraid of breaking something.
                            tabsetPanel(id = "howToTabset",
                                        type = "tabs",
                                        tabPanel(
                                          title = "Credits",
                                          br(),
                                          p("This app was created by Kaija Gahm for the YGDP in Fall 2020, with help from Ian Niedel."),
-                                         hr(),
+                                         hr(), # lines to separate sections
                                          a(href = "https://github.com/kaijagahm/ygdpDashboard", 
-                                           "App source code"),
+                                           "App source code"), # hyperlink
                                          hr(),
+                                         # hyperlink within paragraph
                                          p("Survey data collected by Jim Wood, Raffaella Zanuttini, and the rest of the Yale Grammatical Diversity Project", a(href = "(ygdp.yale.edu)", "ygdp.yale.edu"))
                                        )
                            )
                   ),
                   tabPanel(title = "About controls",
+                           # See above notes about maybe not needing tabsetPanel.
                            tabsetPanel(id = "aboutTabset",
                                        type = "tabs",
                                        tabPanel(
@@ -239,11 +245,15 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
   )
   
   )
-} # end of UI function
+} # end of UI function (again, only enclosed this in a function to make URL bookmarking work)
 
-# Beginning of server function
+
+# Server function ---------------------------------------------------------
 server <- function(input, output, session){
-  # Update selected menu item -----------------------------------------------
+
+
+  # Update body tabs --------------------------------------------------------
+  ## Here's where the hidden vs. non-hidden tabs thing explicitly comes into play.
   observeEvent(input$sidebarItemExpanded, {
     if(input$sidebarItemExpanded == "pointMaps"){
       updateTabItems(session, "leftSidebar", selected = "hiddenPointMaps")
@@ -254,9 +264,11 @@ server <- function(input, output, session){
     }else if(input$sidebarItemExpanded == "about"){
       updateTabItems(session, "leftSidebar", selected = "hiddenAbout")
     }
-  })
+  },
+  label = "oeUpdateBodyTabs") # label for this observer, useful for debugging
   
   # Update right sidebar tabs -----------------------------------------------
+  ## Same logic as I used above for the body tabs.
   observeEvent(input$sidebarItemExpanded, {
     if(input$sidebarItemExpanded == "pointMaps"){
       updateTabsetPanel(session, "rightSidebarTabset", 
@@ -271,23 +283,11 @@ server <- function(input, output, session){
       updateTabsetPanel(session, "rightSidebarTabset",
                         selected = "About controls")
     }
-  })
-  
-  # (HT) Banner images ------------------------------------------------------
-  output$PTSBanner <- renderImage({
-    return(list(src = "data/howTo/PTSBanner.png",
-                contentType = "image/png",
-                width = "100%"))
-  }, deleteFile = FALSE)
-  
-  output$INTBanner <- renderImage({
-    return(list(src = "data/howTo/INTBanner.png",
-                contentType = "image/png",
-                width = "100%"))
-  }, deleteFile = FALSE)
-  
-  
-  # (HT) Other images -------------------------------------------------------
+  },
+  label = "oeUpdateRSTabs")
+
+  # (HT) Images -------------------------------------------------------------
+  # Render images to display in the How To Use section. Images are stored in the data/ folder of the app directory.
   ## (PTS)
   ### Left sidebar
   output$PTSLeftSidebar <- renderImage({
@@ -340,49 +340,62 @@ server <- function(input, output, session){
   }, deleteFile = FALSE)
   
   
-  
-  
   # POINTS MODE (PTS) -------------------------------------------------------
   # (PTS) sentence counters -------------------------------------------------
-  nSentences <- reactiveVal(1) # start with 1 sentence
+  # These reactive counters keep track of how many sentences are selected and which sentences are active.
+  
+  # How many sentences are active, and which numbers?
+  nSentences <- reactiveVal(1) # initialize with 1 sentence
   activeSentences <- reactiveVal(1) # only sentence 1 active initially
-  chosenSentences <- reactive({ # list of sentences the user has chosen.
+  
+  # list of sentences the user has chosen.
+  chosenSentences <- reactive({
     reactiveValuesToList(input)[paste0("sentence", activeSentences())]
-  })
+  },
+  label = "rChosenSentences")
   
   # (PTS) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `dat`.
-  surveyData <- reactiveVal(snl[[1]]) # initial survey data
+  surveyData <- reactiveVal(snl[[1]], label = "rvSurveyData") # initial survey data--start with first survey contained in snl.
   observeEvent(input$sentencesApply, { # When you click the "apply" button
     name <- paste0("S", input$survey)
     surveyData(snl[[name]]) # update to new survey data
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeUpdateSurveyData")
   
-  ## Dummy data for sentence selector options
+  ## Dummy mirror of real data: for creating sentence selector options
   surveySentencesDataList <- reactive({ # this is basically a replicate of surveyData(), except that `dat` doesn't depend on it. surveySentencesDataList is *only* used to generate choices to populate the sentence selectors. 
     snl[[paste0("S", input$survey)]]
-  })
-  
+  },
+  label = "rSurveySentencesDataList")
   
   # (PTS) leftRV ------------------------------------------------------------------
-  # reactiveValues object to store selected sentences and selected ratings (from the left panel)
+  # Selected sentences and ratings from left sidebar get stored in a reactiveValues obj.
   ## initial values
-  leftRV <- reactiveValues(chosenSentences = defaultSentence1,
+  leftRV <- reactiveValues(chosenSentences = defaultSentence1, # defined at top of script
+                           # initialize with all ratings selected
                            chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
   
+  # When the apply button is clicked, update the chosen sentences and ratings
   observeEvent(input$sentencesApply, {
-    leftRV$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", activeSentences())] %>% 
-      unlist() # this is a VECTOR
-    leftRV$chosenRatings <- reactiveValuesToList(input)[paste0("ratingsSentence", activeSentences())] # this is a LIST
-  }, ignoreInit = T)
+    leftRV$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", 
+                                                                 activeSentences())] %>% 
+      unlist() # note: this is a VECTOR
+    leftRV$chosenRatings <- reactiveValuesToList(input)[paste0("ratingsSentence", 
+                                                               activeSentences())] # note: this is a LIST
+  }, 
+  ignoreInit = T, # ingnoreInit tells this observer not to fire on app load
+  label = "oeUpdateSentencesRatings") 
   
   
   # (PTS) rightRV -----------------------------------------------------------------
-  # reactiveValues object to store selected demographic filters (from the right panel)
+  # Filter values from the right sidebar get stored in a reactiveValues obj.
+  ## Initialize rightRV with default values
   rightRV <- reactiveValues(ageNAs = T,
-                            ageButtons = ageBinLevels,
-                            ageSlider = c(18, 100),
+                            ageButtons = ageBinLevels, # levels defined in dashboardFunctions.R
+                            ageSlider = c(18, 100), # age slider goes from 18 to 100
                             raceNAs = T,
                             race = raceLevels,
                             genderNAs = T,
@@ -390,25 +403,32 @@ server <- function(input, output, session){
                             educationNAs = T,
                             education = educationLevels)
   
+  ## values in rightRV are updated when the "apply" button is clicked in the right sidebar.
   observeEvent(input$pointFiltersApply, {
     rightRV$ageNAs <- input$ageNAs
+    # We have a two-tab interface for selecting ages: either buttons or a range. 
+    ## If the age slider widget ("range") is currently selected, then set the ageButtons reactive val to NULL, and set the ageSlider reactive val to the chosen values.
     if(input$ageTabs == "range"){
       rightRV$ageSlider <- as.numeric(input$ageSlider)
       rightRV$ageButtons <- NULL
+    ## If the age buttons widget is currently selected, then do the opposite: set "range" to NULL etc.
     }else{
       rightRV$ageButtons <- as.character(input$ageButtons)
       rightRV$ageSlider <- NULL
     }
-    rightRV$raceNAs <- input$raceNAs
+    rightRV$raceNAs <- input$raceNAs # this is the "include NA's?" checkbox
     rightRV$race <- input$race
     rightRV$genderNAs <- input$genderNAs
     rightRV$gender <- input$gender
     rightRV$educationNAs <- input$educationNAs
     rightRV$education <- input$education
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T, # we don't need to run this observer on load because we already define default values of rightRV above.
+  label = "oeUpdateFilters") 
   
   
   # (PTS) Data --------------------------------------------------------------
+  ## Unlike the reactiveValues objects above, which only update when the observer runs, ### XXX going to stop here and go through and label all the observers and reactives
   dat <- reactive({
     surveyData()[leftRV$chosenSentences] %>%
       lapply(., as.data.frame) %>%
@@ -431,7 +451,8 @@ server <- function(input, output, session){
       {if(rightRV$genderNAs == F) filter(., !is.na(gender)) else .} %>%
       {if(rightRV$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
       {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
-  })
+  },
+  label = "rDat")
   
   # The data that *doesn't* meet the criteria: all the responseID's except for the ones included in dat() (this is just a shortcut so I don't have to re-write all these filters backwards.)
   tad <- reactive({
@@ -444,7 +465,8 @@ server <- function(input, output, session){
       distinct() %>%
       mutate(lat = as.numeric(lat),
              long = as.numeric(long))
-  })
+  },
+  label = "rTad")
   
   # Wide format data (for mapping and coloring)
   ## Calculated values: to be joined to wide format data
@@ -456,7 +478,8 @@ server <- function(input, output, session){
                 md = median(rating, na.rm = T),
                 min = min(rating, na.rm = T),
                 max = max(rating, na.rm = T))
-  })
+  },
+  label = "rCalc")
   
   ## Wide format data
   wideDat <- reactive({
@@ -470,11 +493,13 @@ server <- function(input, output, session){
              meetsCriteria = 5) %>% # so the color choices will work
       {if(nSentences() > 1) mutate(., label = paste0(label, " <br> <b>Mean: </b> ", round(mn, 2), " <br> <b>Median: </b> ", md, " <br> <b>Min: </b> ", min, " <br> <b>Max: </b> ", max))else .} %>%
       upgradeLabels(.)
-  })
+  },
+  label = "rWideDat")
   
-  observe({ # whenever dat() changes, print its dimensions.
-    print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
-  })
+  # observe({ # whenever dat() changes, print its dimensions.
+  #   print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
+  # },
+  # label = "oDimDat")
   
   # (PTS) Map ---------------------------------------------------------------
   output$pointMap <- renderLeaflet({
@@ -523,7 +548,8 @@ server <- function(input, output, session){
                          fillOpacity = 1,
                          group = "Show points that don't meet selected criteria")
     }
-  })
+  },
+  label = "oePointMapPoints")
   ### Controls
   observeEvent(wideDat(), {
     if(colorCol() == "meetsCriteria"){
@@ -543,7 +569,8 @@ server <- function(input, output, session){
                   opacity = 1,
                   labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }
-  })
+  },
+  label = "oePointMapControls")
   
   ## Change point colors
   ## Re-plot when input$pointDisplaySettingsApply is clicked
@@ -585,7 +612,8 @@ server <- function(input, output, session){
                            fillOpacity = 1,
                            group = "Show points that don't meet selected criteria")
       }
-    })
+    },
+    label = "oePointMapChangeColors")
     ### Controls
     observeEvent(wideDat(), {
       if(colorCol() == "meetsCriteria"){
@@ -605,7 +633,8 @@ server <- function(input, output, session){
                     opacity = 1,
                     labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
       }
-    })
+    },
+    label = "oePointMapUpdateControls")
   })
   
   
@@ -621,7 +650,8 @@ server <- function(input, output, session){
     input$resetPointMapZoom
     leafletProxy("pointMap") %>% 
       setView(-96, 37.8, 4)
-  })
+  },
+  label = "oResetPointMapZoom")
   
   # (PTS) Add a sentence ----------------------------------------------------------
   ### Function definition
@@ -654,7 +684,8 @@ server <- function(input, output, session){
     activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
     nSentences(nSentences() + 1) # update nSentences
     print(activeSentences())
-  })
+  },
+  label = "oeAddSentence")
   
   # (PTS) Reset buttons -----------------------------------------------------------
   ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
@@ -679,7 +710,9 @@ server <- function(input, output, session){
       multiple = T # remove all, not just the first one.
     )
     print(paste0("active sentences: ", activeSentences()))
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeSentencesReset")
   
   ## 2. Right reset button: reset values in NA checkboxes and demographic filter selectors. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$pointFiltersReset, {
@@ -702,7 +735,8 @@ server <- function(input, output, session){
     
     ## Message for debugging
     print("Demographic filters have been reset. Click 'Apply' again to propagate changes.")
-  })
+  },
+  label = "oePointFiltersReset")
   
   ## 3. Update the age selections when you toggle between the tabs
   observeEvent(input$ageTabs, {
@@ -711,7 +745,9 @@ server <- function(input, output, session){
     }else{
       updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
     }
-  })
+  },
+  label = "oeUpdateAgeFilters")
+  ### XXX start here with labeling reactives/observers. All reactives/observers below this point need labels.
   
   
   # (PTS) Update sentence choices -------------------------------------------------
@@ -1062,7 +1098,7 @@ server <- function(input, output, session){
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1I",
-                         selected = defaultSentence1) # default sentence
+                         selected = defaultSentence1)
     
     # Remove additional sentence controls
     removeUI(
