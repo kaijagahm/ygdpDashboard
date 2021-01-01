@@ -51,7 +51,7 @@ load("data/interpolations/surveySentencesTable.Rda")
 
 # Use the reactlog --------------------------------------------------------
 # Enable the reactlog if you want to visualize reactivity. If you do this, run the app and then in the console you can run shiny::reactlogShow() to pull up the reactlog. You have to start a new R session each time unless you also want to see past uses of the app. More on how to use the reactlog here: https://rstudio.github.io/reactlog/articles/reactlog.html
-#reactlog_enable() # un-comment this line to actually use the reactlog.
+reactlog_enable() # un-comment this line to actually use the reactlog.
 
 # Load separate UI scripts ------------------------------------------------
 # I've separated out a few parts of the UI into separate scripts.
@@ -185,7 +185,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                   # (INT)
                   tabPanel(title = "Interpolation map controls",
                            # Panel containing just a tab for display settings
-                           ## Kept as a tabsetPanel for consistency of code and because I was afaid to break something. # AAA
+                           ## Kept as a tabsetPanel for consistency of code and because I was afraid to break something. # AAA
                            tabsetPanel(id = "interpolationMapTabset",
                                        type = "tabs",
                                        tabPanel(
@@ -371,7 +371,7 @@ server <- function(input, output, session){
   # (PTS) leftRV ------------------------------------------------------------------
   # Selected sentences and ratings from left sidebar get stored in a reactiveValues obj.
   ## initial values
-  leftRV <- reactiveValues(chosenSentences = defaultSentence1, # defined in dashboardFunctions.R # AAA XXX
+  leftRV <- reactiveValues(chosenSentences = defaultSentence1, # defined in dashboardFunctions.R # AAA see issue #39
                            # initialize with all ratings selected
                            chosenRatings = list(ratingsSentence1 = c("1", "2", "3", "4", "5")))
   
@@ -695,27 +695,7 @@ server <- function(input, output, session){
   label = "oResetPointMapZoom")
   
   # (PTS) Add a sentence ----------------------------------------------------------
-  ### Function definition
-  addSentenceUI <- function(id, dat){
-    div(id = paste0("sentence", id, "Controls"),
-        div(style = reduceSpacing,
-            selectizeInput(inputId = paste0("sentence", id),
-                           label = paste0("Sentence ", id, ":"),
-                           choices = getSentenceChoices(dat),
-                           selected = getSentenceChoices(dat)[[1]][[1]],
-                           multiple = F),
-            prettyRatingSelector(sentenceNum = as.numeric(id))),
-        #div(style = "display:inline-block",
-        #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
-        #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
-        #icon = icon("trash"), # individual sentence trash buttons: not implemented
-        #style = "minimal")),
-        br(),
-        hr()
-    )
-  }
-  
-  ### Activate function to add UI when button is clicked
+  ## Activate function to add UI when button is clicked
   observeEvent(input$addSentence, { # when addSentence button is clicked
     insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
                                paste0("#sentence", max(activeSentences()), "Controls")),
@@ -855,32 +835,34 @@ server <- function(input, output, session){
   },
   label = "oeUpdateColorCol")
   
-   ### XXX START HERE WITH THE LABELING
-  
   # INTERPOLATION MODE ------------------------------------------------------
   # (INT) sentence counters -------------------------------------------------
-  nSentencesI <- reactiveVal(1) # start with 1 sentence
-  activeSentencesI <- reactiveVal(1) # only sentence 1 active initially
+  nSentencesI <- reactiveVal(1, label = "rvNSentencesI") # start with 1 sentence
+  activeSentencesI <- reactiveVal(1, label = "rvActiveSentencesI") # only sentence 1 active initially
   chosenSentencesI <- reactive({ # list of sentences the user has chosen.
     reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")]
-  }) # selectors take form of "sentence1I"
+  },
+  label = "rChosenSentencesI") # selectors take form of "sentence1I"
   
   # (INT) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `datI`.
-  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]]) # initial interp list for the chosen survey
+  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]], # initial interp list for the chosen survey
+                             label = "rvSurveyDataI") 
   observeEvent(input$sentencesApplyI, { # When you click the "apply" button
     name <- paste0("S", input$surveyI)
     surveyDataI(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
   }, 
-  ignoreInit = T)
+  ignoreInit = T,
+  label = "oeUpdateSurveyDataI")
   
   ## Dummy data for sentence selector options
   surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
     interpListMedium[names(interpListMedium) %in%
                        surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
                                                            paste0("S", input$surveyI)]]
-  })
+  },
+  label = "rSurveySentencesDataListI")
   
   # (INT) leftRVI ------------------------------------------------------------------
   # reactiveValues object to store selected sentences (from left panel)
@@ -890,7 +872,9 @@ server <- function(input, output, session){
   observeEvent(input$sentencesApplyI, {
     leftRVI$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")] %>% # e.g. "sentence1I"
       unlist() # this is a VECTOR
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeUpdateLeftRVI")
   
   # Could maybe take a different approach to the data aggregation.
   # (INT) Data --------------------------------------------------------------
@@ -927,7 +911,8 @@ server <- function(input, output, session){
         else .} %>%
       as.data.frame() %>%
       {if(nrow(.) == nrow(mediumGrid)) bind_cols(., mediumGrid) %>% st_as_sf() else .}
-  })
+  },
+  label = "rDatI")
   
   # (INT) Map ---------------------------------------------------------------
   output$interpolationMap <- renderLeaflet({
@@ -1014,7 +999,8 @@ server <- function(input, output, session){
                   labFormat = labelFormat(transform = function(x) 
                     sort(x, decreasing = TRUE)))
     }
-  })
+  },
+  label = "oeUpdateHexColorsData")
   
   ## (2) COLOR CRITERIA CHOICE CHANGES
   observeEvent(input$interpolationDisplaySettingsApply, {
@@ -1080,7 +1066,9 @@ server <- function(input, output, session){
                   opacity = 1,
                   labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
     }
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeUpdateHexColorsColorCriteria")
   
   # (INT) map zoom ----------------------------------------------------------
   ## Define reset button
@@ -1095,28 +1083,11 @@ server <- function(input, output, session){
     input$resetInterpolationMapZoom
     leafletProxy("interpolationMap") %>% 
       setView(-96, 37.8, 4)
-  })
+  },
+  label = "oResetInterpolationMapZoom")
   
   # (INT) Add a sentence ----------------------------------------------------------
-  ### Function definition
-  addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
-    div(id = paste0("sentence", id, "Controls", "I"),
-        div(style = reduceSpacing,
-            selectizeInput(inputId = paste0("sentence", id, "I"),
-                           label = paste0("Sentence ", id, ":"),
-                           choices = getSentenceChoicesI(inputList,
-                                                         surveyIDString,
-                                                         surveySentencesTable),
-                           selected = getSentenceChoicesI(inputList, 
-                                                          surveyIDString,
-                                                          surveySentencesTable)[[1]][[1]],
-                           multiple = F)),
-        br(),
-        hr()
-    )
-  }
-  
-  ### Activate function to add UI when button is clicked
+  ## Add UI when button is clicked
   observeEvent(input$addSentenceI, { # when addSentenceI button is clicked
     insertUI(selector = ifelse(nSentencesI() == 1, "#sentence1controlsI", 
                                paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
@@ -1128,7 +1099,8 @@ server <- function(input, output, session){
     activeSentencesI(c(activeSentencesI(), last(activeSentencesI()) + 1)) # update activeSentencesI
     nSentencesI(nSentencesI() + 1) # update nSentencesI
     print(paste("Number of active sentences:", nSentencesI()))
-  })
+  },
+  label = "oeAddSentenceI")
   
   # (INT) Reset button -----------------------------------------------------------
   ## Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset survey selection, reset sentence counters.
@@ -1152,7 +1124,9 @@ server <- function(input, output, session){
       multiple = T # remove all, not just the first one.
     )
     print(paste0("active sentences: ", activeSentencesI()))
-  }, ignoreInit = T)
+  }, 
+  ignoreInit = T,
+  label = "oeSentencesResetI")
   
   # (INT) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApplyI|input$sentencesResetI, { ## AAA
@@ -1216,10 +1190,12 @@ server <- function(input, output, session){
                                     "Max rating"),
                         selected = ifelse(val %in% choicesMore, val, "Sentence 1 ratings"))
     }
-  })
+  },
+  label = "oeUpdateColorCriteriaInterpolation")
   
   # Translate input$colorCriteriaInterpolation into the names of the columns in datI()
-  colorColI <- reactiveVal("sentence1.pred") # initial value is sentence1.pred
+  colorColI <- reactiveVal("sentence1.pred", # initial value is sentence1.pred
+                           label = "rvColorColI") 
   observeEvent(input$colorCriteriaInterpolation, { # reassign the value based on the input
     print(input$colorCriteriaInterpolation)
     if(grepl("ratings", input$colorCriteriaInterpolation)){
@@ -1243,8 +1219,8 @@ server <- function(input, output, session){
     }else if(input$colorCriteriaInterpolation == "RGB scale"){
       colorColI("rgbColor")
     }
-    print(colorColI())
-  })
+  },
+  label = "oeUpdateColorCriteriaInterpolation")
   
   # (INT) Update sentence choices -------------------------------------------------
   # This observer listens to surveySentencesDataListI(), not surveyDataI(), since the latter is only updated when you click "Apply".
@@ -1271,7 +1247,8 @@ server <- function(input, output, session){
                                                           paste0("S", input$surveyI), 
                                                           surveySentencesTable)[[1]][[1]])
     })
-  })
+  },
+  label = "oeUpdateSentenceChoicesI")
   
   # Open the right sidebar
   shinyjs::addClass(selector = "body", class = "control-sidebar-open")

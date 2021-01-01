@@ -202,3 +202,46 @@ upgradeLabels <- function(x) {
   return(x)
 }
 
+# addSentenceUI -----------------------------------------------------------
+# Function to add the dynamic UI components for a new sentence in points mode
+## Function definition
+addSentenceUI <- function(id, dat){
+  div(id = paste0("sentence", id, "Controls"),
+      div(style = reduceSpacing,
+          selectizeInput(inputId = paste0("sentence", id),
+                         label = paste0("Sentence ", id, ":"),
+                         choices = getSentenceChoices(dat),
+                         selected = getSentenceChoices(dat)[[1]][[1]],
+                         multiple = F),
+          prettyRatingSelector(sentenceNum = as.numeric(id))),
+      #div(style = "display:inline-block",
+      #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
+      #div(style = "display:inline-block", actionBttn(inputId = paste0("trash", id),
+      #icon = icon("trash"), # individual sentence trash buttons: not implemented
+      #style = "minimal")),
+      br(),
+      hr()
+  )
+}
+
+
+# addSentenceUII ----------------------------------------------------------
+# Function to add the dynamic UI components for a new sentence in interpolation mode
+addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
+  div(id = paste0("sentence", id, "Controls", "I"),
+      div(style = reduceSpacing,
+          selectizeInput(inputId = paste0("sentence", id, "I"),
+                         label = paste0("Sentence ", id, ":"),
+                         choices = getSentenceChoicesI(inputList,
+                                                       surveyIDString,
+                                                       surveySentencesTable),
+                         selected = getSentenceChoicesI(inputList, 
+                                                        surveyIDString,
+                                                        surveySentencesTable)[[1]][[1]],
+                         multiple = F)),
+      br(),
+      hr()
+  )
+}
+
+
