@@ -566,7 +566,8 @@ server <- function(input, output, session){
                          opacity = 1,
                          fillOpacity = 1,
                          # We define a "group" for these points in order to take advantage of the built-in leaflet legend functionality.
-                         group = checkboxText, # defined in dashboardFunctions.R)
+                         group = checkboxText, # defined in dashboardFunctions.R
+                         )
     }else{ # if all points fail to meet the criteria, then we plot only the black points.
       leafletProxy("pointMap") %>%
         clearMarkers() %>% # remove any markers
@@ -578,7 +579,7 @@ server <- function(input, output, session){
                          weight = 0.5, # width of the border
                          radius = 2, opacity = 1,
                          fillOpacity = 1,
-                         group = checkboxText # defined in dashboardFunctions.R)
+                         group = checkboxText) # defined in dashboardFunctions.R
     }
   },
   label = "oePointMapPoints")
@@ -640,7 +641,8 @@ server <- function(input, output, session){
                            weight = 0.5,
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
-                           group = checkboxText # defined in dashboardFunctions.R)
+                           group = checkboxText # defined in dashboardFunctions.R
+                           )
       }else{
         leafletProxy("pointMap") %>%
           clearMarkers() %>%
@@ -652,7 +654,8 @@ server <- function(input, output, session){
                            weight = 0.5,
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
-                           group = checkboxText # defined in dashboardFunctions.R)
+                           group = checkboxText # defined in dashboardFunctions.R
+                           )
       }
     },
     label = "oePointMapChangeColors")
