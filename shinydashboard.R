@@ -7,7 +7,7 @@
 # Issue tracker: https://github.com/kaijagahm/ygdpDashboard/issues
 
 # Some notes on the code --------------------------------------------------
-## - I use consistent acronyms in this script to help organize the code. (PTS) refers to "points mode" (i.e. the tab of the app that shows a map with points on it). (INT) refers to "interpolation mode". (HT) refers to the "How to use" tab. (AB) refers to the "About" tab. #XXX add (AB) to the "about" sections!
+## - I use consistent acronyms in this script to help organize the code. (PTS) refers to "points mode" (i.e. the tab of the app that shows a map with points on it). (INT) refers to "interpolation mode". (HT) refers to the "How to use" tab. (AB) refers to the "About" tab. 
 
 ## - "XXX" is a marker I use when there is something in the code I want to come back to and fix. It's easy to find with Command + F in RStudio. 
 
@@ -535,6 +535,7 @@ server <- function(input, output, session){
   })
   
   # (PTS) Points on map -----------------------------------------------------
+  # NOTE: the below code is pretty redundant. I couldn't figure out how to incorporate conditional pipes into leaflet code, or even if it is possible, I found some indications on the internet that it's a bad idea. So I essentially repeated myself several times within some if/else statements. This could maybe be made less redundant.
   # Plot points onto the map. Points get re-plotted each time wideDat() changes.
   ### Data points
   observeEvent(wideDat(), {
@@ -565,7 +566,7 @@ server <- function(input, output, session){
                          opacity = 1,
                          fillOpacity = 1,
                          # We define a "group" for these points in order to take advantage of the built-in leaflet legend functionality.
-                         group = "Show points that don't meet selected criteria")
+                         group = checkboxText, # defined in dashboardFunctions.R)
     }else{ # if all points fail to meet the criteria, then we plot only the black points.
       leafletProxy("pointMap") %>%
         clearMarkers() %>% # remove any markers
@@ -577,19 +578,19 @@ server <- function(input, output, session){
                          weight = 0.5, # width of the border
                          radius = 2, opacity = 1,
                          fillOpacity = 1,
-                         group = "Show points that don't meet selected criteria")
+                         group = checkboxText # defined in dashboardFunctions.R)
     }
   },
   label = "oePointMapPoints")
   
-  ### Controls
+  ### Controls (the checkbox to hide/show points that don't meet criteria)
   observeEvent(wideDat(), {
     # If we're coloring by "meets criteria", then we add a checkbox control only, and no color legend.
     if(colorCol() == "meetsCriteria"){
       leafletProxy("pointMap") %>%
         clearControls() %>%
         addLayersControl(
-          overlayGroups = "Show points that don't meet selected criteria",
+          overlayGroups = checkboxText, # defined in dashboardFunctions.R
           options = layersControlOptions(collapsed = F)
           ) 
       # If we're coloring by individual sentence ratings, then we add a checkbox control and also a color legend.
@@ -597,7 +598,7 @@ server <- function(input, output, session){
       leafletProxy("pointMap") %>%
         clearControls() %>%
         addLayersControl(
-          overlayGroups = "Show points that don't meet selected criteria",
+          overlayGroups = checkboxText, # defined in dashboardFunctions.R
           options = layersControlOptions(collapsed = F)) %>%
         # To get the colors in the right order, we have to use a reversed color palette, continuousBlueYellowLegend, defined in dashboardFunctions.R, AND we have to transform the labels to be in decreasing order
         addLegend("bottomright", pal = continuousBlueYellowLegend, 
@@ -612,14 +613,14 @@ server <- function(input, output, session){
   },
   label = "oePointMapControls")
   
-  # XXX START HERE WITH COMMENTING/DOCUMENTING
   ## Change point colors
-  ## Re-plot when input$pointDisplaySettingsApply is clicked
+  ## Re-plot points when input$pointDisplaySettingsApply is clicked
   observeEvent(input$pointDisplaySettingsApply, {
-    req(wideDat())
+    req(wideDat()) # dat and tad must exist
     req(tad())
     ### Data points
     observeEvent(wideDat(), {
+      # This code is basically the same as above.
       if(nrow(wideDat()) > 0){
         leafletProxy("pointMap") %>%
           clearMarkers() %>%
@@ -639,7 +640,7 @@ server <- function(input, output, session){
                            weight = 0.5,
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
-                           group = "Show points that don't meet selected criteria")
+                           group = checkboxText # defined in dashboardFunctions.R)
       }else{
         leafletProxy("pointMap") %>%
           clearMarkers() %>%
@@ -651,23 +652,24 @@ server <- function(input, output, session){
                            weight = 0.5,
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
-                           group = "Show points that don't meet selected criteria")
+                           group = checkboxText # defined in dashboardFunctions.R)
       }
     },
     label = "oePointMapChangeColors")
-    ### Controls
+        
+    ### Controls (same as above)
     observeEvent(wideDat(), {
       if(colorCol() == "meetsCriteria"){
         leafletProxy("pointMap") %>%
           clearControls() %>%
           addLayersControl(
-            overlayGroups = "Show points that don't meet selected criteria",
+            overlayGroups = checkboxText, # defined in dashboardFunctions.R
             options = layersControlOptions(collapsed = F)) 
       }else{
         leafletProxy("pointMap") %>%
           clearControls() %>%
           addLayersControl(
-            overlayGroups = "Show points that don't meet selected criteria",
+            overlayGroups = checkboxText, # defined in dashboardFunctions.R
             options = layersControlOptions(collapsed = F)) %>%
           addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
                     title = "Rating",
@@ -678,44 +680,51 @@ server <- function(input, output, session){
     label = "oePointMapUpdateControls")
   })
   
-  
   # (PTS) map zoom ----------------------------------------------------------
   ## Define reset button
   output$pointMapResetZoom <- renderUI({
-    div(style="display:inline-block", 
-        actionButton("resetPointMapZoom", "Reset map zoom", style = "background-color: #4AA8F7"))
+    div(style = "display:inline-block", # I guess we don't really need this part? Just keeping it to be consistent with the places where we have an apply and a reset button next to each other.
+        actionButton("resetPointMapZoom", "Reset map zoom", 
+                     style = "background-color: #4AA8F7"))
   })
   
   ## When reset button is clicked, reset the map zoom
   observe({
     input$resetPointMapZoom
     leafletProxy("pointMap") %>% 
-      setView(-96, 37.8, 4)
+      setView(-96, 37.8, 4) # sets it back to its original definition. Ideally should save this to a variable, since it comes up three times in the code, but I'm not sure how (since it's not a character string.)
   },
   label = "oResetPointMapZoom")
   
   # (PTS) Add a sentence ----------------------------------------------------------
-  ## Activate function to add UI when button is clicked
+  ## Add additional sentence UI when button is clicked
   observeEvent(input$addSentence, { # when addSentence button is clicked
-    insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
+    ## AAA Note the difference in capitalization here! This is important. The div for the sentence 1 ui is called "sentence1controls", but the divs for subsequent sentence UI's are called "sentence[#]Controls", with a capital C. This is a bit hacky, but basically I did this so that when the user clicks the "Reset" button, I could tell the program to remove all of the divs with "Controls" in their id's, without also removing the UI for the first sentence (since we would never want to remove ALL the sentence UI elements.)
+    shiny::insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
                                paste0("#sentence", max(activeSentences()), "Controls")),
-             where = "afterEnd",
+             where = "afterEnd", # add new selector after the last previous selector
+             # addSentenceUI is defined in dashboardFunctions.R. Don't confuse with with insertUI, which is native to Shiny.
              ui = addSentenceUI(id = last(activeSentences()) + 1, 
                                 dat = surveySentencesDataList())) # make a sentence UI with the new number
-    activeSentences(c(activeSentences(), last(activeSentences()) + 1)) # update activeSentences
-    nSentences(nSentences() + 1) # update nSentences
-    print(activeSentences())
+    
+    # update activeSentences
+    activeSentences(c(activeSentences(), 
+                      last(activeSentences()) + 1)) 
+    
+    # update nSentences
+    nSentences(nSentences() + 1) 
   },
   label = "oeAddSentence")
   
   # (PTS) Reset buttons -----------------------------------------------------------
-  ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
+  ## 1. Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset sentence 1 ratings, reset survey selection, reset sentence counters. 
+  ## (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$sentencesReset, {
-    # Reset sentence counters
+    # Reset sentence counters back to 1
     activeSentences(1)
     nSentences(1)
     
-    # Reset survey selection
+    # Reset survey selection to default
     updateSelectInput(session, "survey",
                       selected = str_replace(names(snl), "^S", "")[1])
     
@@ -727,19 +736,20 @@ server <- function(input, output, session){
     
     # Remove additional sentence controls
     removeUI(
-      selector = "div[id*='Controls']", # "Controls", not "controls", to keep sentence1controls
+      selector = "div[id*='Controls']", # AAA "Controls", not "controls", to keep sentence1controls
       multiple = T # remove all, not just the first one.
     )
-    print(paste0("active sentences: ", activeSentences()))
   }, 
   ignoreInit = T,
   label = "oeSentencesReset")
   
   ## 2. Right reset button: reset values in NA checkboxes and demographic filter selectors. (Note that this doesn't update `dat`--you still have to click the "Apply" button for the updates to go through.)
   observeEvent(input$pointFiltersReset, {
+    # Note: here we're restoring filters to defaults, which are defined in dashboardFunctions.R and which are assigned when the filters are initially created in leftSidebar.R
     ## Reset age filters
     updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
-    updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
+    updateCheckboxGroupButtons(session, "ageButtons", 
+                               choices = ageBinLevels, selected = ageBinLevels)
     updateCheckboxInput(session, "ageNAs", value = TRUE)
     
     ## Reset race filters
@@ -754,15 +764,18 @@ server <- function(input, output, session){
     updatePickerInput(session, "education", selected = educationLevels)
     updateCheckboxInput(session, "educationNAs", value = TRUE)
     
-    ## Message for debugging
+    ## Message for console (for debugging/understanding)
     print("Demographic filters have been reset. Click 'Apply' again to propagate changes.")
   },
   label = "oePointFiltersReset")
   
   ## 3. Update the age selections when you toggle between the tabs
+  # i.e. when you choose a different method of selecting ages, the choices reset.
+  # Whether or not this is a good idea is up for debate. I can't remember why I made this choice, and I don't *think* it should matter because the values in rightRV get set to NULL anyway when it updates, depending on which age tab you're on. So maybe it would actually be best to not do this? But I'm not fixing things right now, just documenting, so I'll leave this choice for someone else to make in the future.
   observeEvent(input$ageTabs, {
     if(input$ageTabs == "range"){
-      updateCheckboxGroupButtons(session, "ageButtons", choices = ageBinLevels, selected = ageBinLevels)
+      updateCheckboxGroupButtons(session, "ageButtons", 
+                                 choices = ageBinLevels, selected = ageBinLevels)
     }else{
       updateSliderInput(session, "ageSlider", min = 18, max = 100, value = c(18, 100))
     }
@@ -791,12 +804,13 @@ server <- function(input, output, session){
   
   # (PTS) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApply|input$sentencesReset, {
-    val <- input$colorCriteriaPoints
-    choices1 <- c("Sentence 1 ratings", "Selected criteria")
+    val <- input$colorCriteriaPoints # this is the value that *was* selected before the update goes through
+    choices1 <- c("Sentence 1 ratings", "Selected criteria") # these are the choices that are available for 1 sentence
     
     if(nSentences() == 1){
       updateSelectInput(session, "colorCriteriaPoints",
                         choices = c("Sentence 1 ratings", "Selected criteria"),
+                        # set `selected` to the previously-selected value *only* if that value is contained in the available choices now.
                         selected = ifelse(val %in% choices1, val, "Sentence 1 ratings"))
     }else{
       updateSelectInput(session, "colorCriteriaPoints",
@@ -806,6 +820,7 @@ server <- function(input, output, session){
                                     "Min rating",
                                     "Max rating",
                                     "Selected criteria"),
+                        # XXX This is a problem! The way I phrased the logic here causes the app to crash at certain points. See issue #35 for more details.
                         selected = val)
     }
   }, 
@@ -818,9 +833,11 @@ server <- function(input, output, session){
   observeEvent(input$colorCriteriaPoints, { # reassign the value based on the input
     if(grepl("ratings", input$colorCriteriaPoints)){
       colorCol(input$colorCriteriaPoints %>% 
+                 # translate the text the user sees ("Sentence 1 ratings") to the column we have in the data ("sentence1").
                  str_replace(., "ratings", "") %>% 
-                 tolower() %>% 
+                 tolower() %>% # 'Sentence' to 'sentence'
                  str_replace_all(., " ", ""))
+      # Translate non-sentence choices that the user sees into non-sentence column names we have in the data.
     }else if(input$colorCriteriaPoints == "Selected criteria"){
       colorCol("meetsCriteria")
     }else if(input$colorCriteriaPoints == "Mean rating"){
@@ -837,18 +854,32 @@ server <- function(input, output, session){
   
   # INTERPOLATION MODE ------------------------------------------------------
   # (INT) sentence counters -------------------------------------------------
+  # How many sentences are active?
   nSentencesI <- reactiveVal(1, label = "rvNSentencesI") # start with 1 sentence
+  
+  # Which sentence numbers are active?
   activeSentencesI <- reactiveVal(1, label = "rvActiveSentencesI") # only sentence 1 active initially
+  
+  # Which sentences (text) are active?
   chosenSentencesI <- reactive({ # list of sentences the user has chosen.
     reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")]
   },
-  label = "rChosenSentencesI") # selectors take form of "sentence1I"
+  label = "rChosenSentencesI") 
   
   # (INT) Survey data -------------------------------------------------------------
   # Varies based on which survey is selected
   ## Real data, to be fed into reactive expression `datI`.
-  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]], # initial interp list for the chosen survey
+  
+  # list of sentence hexes [such that] the names of the sentences match up to the chosen survey, according to the surveySentencesTable (our survey-sentence reference table). 
+  # Note that this is somewhat different from how we generated the survey data in PTS mode, because the PTS list is a nested list (surveys > sentences) while the INT list is flat (sentences). So for INT, we use this step to choose only the sentences that appear in the chosen survey.
+  ## Define initial survey data:
+  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[
+    surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]
+    ],
                              label = "rvSurveyDataI") 
+  
+  
+  ## Update to new survey data if input$surveyI has changed
   observeEvent(input$sentencesApplyI, { # When you click the "apply" button
     name <- paste0("S", input$surveyI)
     surveyDataI(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
@@ -865,24 +896,30 @@ server <- function(input, output, session){
   label = "rSurveySentencesDataListI")
   
   # (INT) leftRVI ------------------------------------------------------------------
-  # reactiveValues object to store selected sentences (from left panel)
-  ## initial values
+  # ReactiveValues object that stores selections from the left sidebar (i.e. selected sentences)
+  ## Initial values:
   leftRVI <- reactiveValues(chosenSentences = defaultSentence1)
   
   observeEvent(input$sentencesApplyI, {
-    leftRVI$chosenSentences <- reactiveValuesToList(input)[paste0("sentence", activeSentencesI(), "I")] %>% # e.g. "sentence1I"
-      unlist() # this is a VECTOR
+    leftRVI$chosenSentences <- reactiveValuesToList(input)[
+      paste0("sentence", activeSentencesI(), "I")
+      ] %>% # e.g. "sentence1I"
+      unlist() # note: this is a VECTOR
   }, 
   ignoreInit = T,
   label = "oeUpdateLeftRVI")
   
-  # Could maybe take a different approach to the data aggregation.
   # (INT) Data --------------------------------------------------------------
+  # This is where we create the datI data frame, from a list of sentence interpolation predictions. We also add calculated statistics.
   datI <- reactive({
-    surveyDataI()[leftRVI$chosenSentences] %>%
-      bind_cols() %>%
-      setNames(paste0("sentence", 1:ncol(.), ".pred")) %>%
-      rowwise() %>%
+    surveyDataI()[leftRVI$chosenSentences] %>% # select predictions for the chosen sentences
+      bind_cols() %>% # bind them from a list into a data frame
+      setNames(paste0("sentence", 1:ncol(.), ".pred")) %>% # rename the columns from sentence-specific names to generic sentence-number names
+      
+      # Now we compute summary statistics across each row
+      rowwise() %>% 
+      
+      ## If 2 sentences are selected, the summary stats include "difference" calculations (going both ways).
       {if(ncol(.) == 2) mutate(.,
                                diff12 = sentence1.pred - sentence2.pred,
                                diff21 = sentence2.pred - sentence1.pred,
@@ -891,17 +928,21 @@ server <- function(input, output, session){
                                min = min(c_across(contains("sentence")), na.rm = T)
       )
         else .} %>%
+      
+      ## If 3 sentences are selected, the summary stats include r, g, and b values, and a combined rgb value that will be used to color the hexagons in RGB mode.
       {if(ncol(.) == 3) mutate(.,
                                min = min(c_across(contains("sentence")), na.rm = T),
                                max = max(c_across(contains("sentence")), na.rm = T),
                                med = median(c_across(contains("sentence")), na.rm = T),
                                mn = mean(c_across(contains("sentence")), na.rm = T),
-                               r = (sentence1.pred/5)*255, 
+                               r = (sentence1.pred/5)*255, # we divide by 255 because that's the maximum value for rgb. We divide by 5 because we need to convert a 1-5 scale into a 0-255 scale, so we're interested in proportions.
                                g = (sentence2.pred/5)*255, 
                                b = (sentence3.pred/5)*255,
                                rgbColor = rgb(r, g, b, maxColorValue = 255)
       )
         else .} %>%
+      
+      ## If there are more than three sentences selected, just compute the basic summary stats, without the rgb or diff columns.
       {if(ncol(.) >= 3) mutate(.,
                                min = min(c_across(contains("sentence")), na.rm = T),
                                max = max(c_across(contains("sentence")), na.rm = T),
@@ -909,8 +950,10 @@ server <- function(input, output, session){
                                mn = mean(c_across(contains("sentence")), na.rm = T)
       )
         else .} %>%
-      as.data.frame() %>%
-      {if(nrow(.) == nrow(mediumGrid)) bind_cols(., mediumGrid) %>% st_as_sf() else .}
+      as.data.frame() %>% 
+      # AAA I'm not sure why I did this as an if statement. nrow(.) == nrow(mediumGrid) should *always* be true. I guess I meant it as a safeguard in case... in case I don't know what. Maybe it should fail with an informative error message?
+      {if(nrow(.) == nrow(mediumGrid)) bind_cols(., mediumGrid) %>% 
+          st_as_sf() else .} # convert to an sf object, for plotting.
   },
   label = "rDatI")
   
@@ -921,16 +964,20 @@ server <- function(input, output, session){
         providers$CartoDB.Positron,
         options = providerTileOptions(minZoom = 4)) %>% # no zooming out
       setView(-96, 37.8, 4) %>%
-      addPolygons(data = mediumGrid %>%
+      addPolygons(data = mediumGrid %>% # mediumGrid is defined at the top of this script.
                     st_transform(4326),
                   weight = 1,
-                  color = ~continuousBlueYellow(pred),
+                  # AAA: this is a little confusing, but basically the map is *initializing* with the polygons already colored in based on the values in the 'pred' column. Remember how, at the very top of this script, we created the object `mediumGrid` by just taking a single element of the medium hexes list? That `pred` column is the values for defaultSentence1. 
+                  # So, whereas for points mode we initialized a truly bare map and had the "initial" points added in a separate step, for INT mode we're actually initializing the map with colored-in hexagons in the same step. I suppose there's no reason we couldn't split it into two steps, using leafletProxy to color in the initial hexagons, but that's not how I did it here.
+                  color = ~continuousBlueYellow(pred), 
                   fillColor = ~continuousBlueYellow(pred),
                   fillOpacity = 1,
                   opacity = 1) %>%
+      # Default legend shows colors from 1 to 5. Have to use the separate '*Legend' palette, defined in dashboardFunctions.R
       addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
                 title = "Rating",
                 opacity = 1,
+                # As with the points legend, we have to specify that the values be sorted in decreasing order.
                 labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)))
   })
   
@@ -938,10 +985,12 @@ server <- function(input, output, session){
   # We want to update the polygon colors in each of two cases: either (1) the data updates (new sentences are chosen), or (2) the color criteria choice updates. In each case, we need to check what the colorColI() value is so that we get the color palette correct.
   ## (1) DATA CHANGES
   observeEvent(datI(), { 
+    ## If the selected color criteria is a diff color, then we need to use a separate palette.
+    # AAA NOTE: it *really* seems like there should be a way to color the points along the lines of ifelse(colorColI() %in% c("diff21", "diff12"), ~continuous44, ~continuousBlueYellow) or something (that's pseudocode, but you get the idea). But I don't think leaflet supports logic like that within the 'color' argument--I tried and it didn't work. That's why I have these clunky if/else statements with repeats of all the map parameters in each one. Surely this can be done better!
     if(colorColI() %in% c("diff21", "diff12")){
       leafletProxy("interpolationMap") %>%
-        clearShapes() %>%
-        clearControls() %>%
+        clearShapes() %>% # remove existing polygons
+        clearControls() %>% # XXX is this necessary? Or just a holdover from the PTS code?
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
@@ -950,20 +999,21 @@ server <- function(input, output, session){
                     fillOpacity = 1,
                     opacity = 1) %>%
         addLegend("bottomright", pal = continuous44Legend, values = -4:4,
-                  title = "Difference",
+                  title = "Difference", # note different legend title than other modes
                   opacity = 1,
                   labFormat = labelFormat(transform = function(x) 
                     sort(x, decreasing = TRUE)))
     }else if(colorColI() == "rgbColor"){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
-        clearControls() %>%
+        clearControls() %>% # XXX
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
-                    color = ~rgbColor, # color by the literal values of the rgb color column
-                    fillColor = ~rgbColor,
+                    color = ~rgbColor, 
+                    fillColor = ~rgbColor, # color hexagons by literal values of the rgb column
                     fillOpacity = 1) %>%
+        # Now we add three separate legends: one each for red, green, and blue. See issue #32 for lots of hemming and hawing about how we should best represent RGB mode, or whether it's even a good idea.
         addLegend("bottomleft",
                   pal = redLegend, values = 1:5,
                   title = "Sentence 1",
@@ -985,7 +1035,7 @@ server <- function(input, output, session){
     }else{
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
-        clearControls() %>%
+        clearControls() %>% #XXX
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
@@ -1003,6 +1053,7 @@ server <- function(input, output, session){
   label = "oeUpdateHexColorsData")
   
   ## (2) COLOR CRITERIA CHOICE CHANGES
+  # This is essentially the same as the oe above, but we just have to repeat everything because the condition is different. Again, could almost certainly re-write this so that it's more efficient.
   observeEvent(input$interpolationDisplaySettingsApply, {
     req(datI()) # datI() must already exist
     req(colorColI())
@@ -1089,22 +1140,28 @@ server <- function(input, output, session){
   # (INT) Add a sentence ----------------------------------------------------------
   ## Add UI when button is clicked
   observeEvent(input$addSentenceI, { # when addSentenceI button is clicked
-    insertUI(selector = ifelse(nSentencesI() == 1, "#sentence1controlsI", 
+    shiny::insertUI(selector = ifelse(nSentencesI() == 1, "#sentence1controlsI", 
+                                      # see note in PTS mode code above about the difference between "controls" and "Controls" for reset-button purposes.
                                paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
              where = "afterEnd",
+             # addSentenceUII is defined in dashboardFunctions.R
              ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
                                  inputList = surveySentencesDataListI(), 
                                  surveyIDString = paste0("S", input$surveyI),
                                  surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
-    activeSentencesI(c(activeSentencesI(), last(activeSentencesI()) + 1)) # update activeSentencesI
-    nSentencesI(nSentencesI() + 1) # update nSentencesI
-    print(paste("Number of active sentences:", nSentencesI()))
+    
+    # update activeSentencesI
+    activeSentencesI(c(activeSentencesI(), 
+                       last(activeSentencesI()) + 1)) 
+    
+    # update nSentencesI
+    nSentencesI(nSentencesI() + 1)
   },
   label = "oeAddSentenceI")
   
   # (INT) Reset button -----------------------------------------------------------
   ## Left reset button: remove sentence controls besides sentence 1, reset sentence 1 selection, reset survey selection, reset sentence counters.
-  ## No right reset button for interpolation mode.
+  ## Note: unlike PTS, INT mode doesn't have or need a reset button for the right sidebar.
   observeEvent(input$sentencesResetI, {
     # Reset sentence counters
     activeSentencesI(1)
@@ -1120,16 +1177,16 @@ server <- function(input, output, session){
     
     # Remove additional sentence controls
     removeUI(
-      selector = "div[id*='ControlsI']", # "ControlsI", not "controlsI", to keep sentence1controlsI
+      selector = "div[id*='ControlsI']", # "ControlsI", not "controlsI", to keep sentence1controlsI. See note above in PTS.
       multiple = T # remove all, not just the first one.
     )
-    print(paste0("active sentences: ", activeSentencesI()))
   }, 
   ignoreInit = T,
   label = "oeSentencesResetI")
   
   # (INT) Update color criteria choices -------------------------------------------
-  observeEvent(input$sentencesApplyI|input$sentencesResetI, { ## AAA
+  observeEvent(input$sentencesApplyI|input$sentencesResetI, {
+    # XXX here's another place where that bug is getting introduced.
     val <- input$colorCriteriaInterpolation
     choices1 <- "Sentence 1 ratings"
     choices2 <- c("Sentence 1 ratings",
@@ -1196,8 +1253,9 @@ server <- function(input, output, session){
   # Translate input$colorCriteriaInterpolation into the names of the columns in datI()
   colorColI <- reactiveVal("sentence1.pred", # initial value is sentence1.pred
                            label = "rvColorColI") 
-  observeEvent(input$colorCriteriaInterpolation, { # reassign the value based on the input
-    print(input$colorCriteriaInterpolation)
+  observeEvent(input$colorCriteriaInterpolation, { # reassign the value of colorColI based on input$colorCriteriaInterpolation
+    # The below lines just translate the plain-text choices that people see into the column names.
+    ## Another way to do this, which I'm only just now thinking of, would be to define the choices in the selectInput as 'Name people see = colName', which I believe you can do. Ah well. Another change that might make things more efficient but that probably isn't worth the risk of breaking things.
     if(grepl("ratings", input$colorCriteriaInterpolation)){
       colorColI(input$colorCriteriaInterpolation %>% 
                   str_replace(., "ratings", "") %>% 
@@ -1250,10 +1308,10 @@ server <- function(input, output, session){
   },
   label = "oeUpdateSentenceChoicesI")
   
-  # Open the right sidebar
+  # Keep the right sidebar open all the time.
   shinyjs::addClass(selector = "body", class = "control-sidebar-open")
 }
 
 
 # Run the app
-shinyApp(ui, server, enableBookmarking = "url")
+shinyApp(ui, server, enableBookmarking = "url") # enable URL bookmarking (although for now it's not working)
