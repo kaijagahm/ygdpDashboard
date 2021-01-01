@@ -244,4 +244,9 @@ addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
   )
 }
 
+# Checkbox Text -----------------------------------------------------------
+# Text to display alongside the checkbox in the corner of the PTS leaflet map that indicates whether or not to show the points that don't meet the selected critiera.
+checkboxText <- "Show points that don't meet selected criteria"
+
+
 
