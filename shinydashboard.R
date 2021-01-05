@@ -51,7 +51,7 @@ load("data/interpolations/surveySentencesTable.Rda")
 
 # Use the reactlog --------------------------------------------------------
 # Enable the reactlog if you want to visualize reactivity. If you do this, run the app and then in the console you can run shiny::reactlogShow() to pull up the reactlog. You have to start a new R session each time unless you also want to see past uses of the app. More on how to use the reactlog here: https://rstudio.github.io/reactlog/articles/reactlog.html
-reactlog_enable() # un-comment this line to actually use the reactlog.
+#reactlog_enable() # un-comment this line to actually use the reactlog.
 
 # Load separate UI scripts ------------------------------------------------
 # I've separated out a few parts of the UI into separate scripts.
@@ -428,6 +428,7 @@ server <- function(input, output, session){
   ## Unlike the reactiveValues objects above, which only update when the observer runs, dat() is a reactive. It listens to: leftRV, rightRV, and surveyData().
   ## Note the use of the `map2()` function for data filtering here. Applies elements of one vector/list to corresponding elements of another vector/list. Supremely useful.
   dat <- reactive({
+    ns2 = isolate({nSentences()}) # Ian created this to get around the weird reactlog loop problem
     surveyData()[leftRV$chosenSentences] %>% # select the chosen sentences from the survey data
       lapply(., as.data.frame) %>% # convert each sentence to a df
       map2(., # first input: the list of df's fed in from the pipe above
@@ -444,7 +445,7 @@ server <- function(input, output, session){
       
       # remove participants who don't meet criteria for all sentences (this is the `AND` stack)
       group_by(responseID) %>% 
-      filter(n() == isolate(nSentences())) %>% # only keep participants who have as many rows as there are sentences, i.e. not fewer.
+      filter(n() == ns2) %>% # only keep participants who have as many rows as there are sentences, i.e. not fewer.
       ungroup() %>%
       
       #Filter by demography
