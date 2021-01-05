@@ -994,7 +994,7 @@ server <- function(input, output, session){
     if(colorColI() %in% c("diff21", "diff12")){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>% # remove existing polygons
-        clearControls() %>% # XXX is this necessary? Or just a holdover from the PTS code?
+        clearControls() %>% # Despite the name, also clears legends to avoid ending up with duplicates.
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
@@ -1010,7 +1010,7 @@ server <- function(input, output, session){
     }else if(colorColI() == "rgbColor"){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
-        clearControls() %>% # XXX
+        clearControls() %>% 
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
@@ -1039,7 +1039,7 @@ server <- function(input, output, session){
     }else{
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
-        clearControls() %>% #XXX
+        clearControls() %>% 
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
