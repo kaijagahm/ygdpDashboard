@@ -21,6 +21,10 @@ convertMenuItem <- function(mi,tabName) {
   mi
 }
 
+
+# Text for NA checkboxes in right sidebar ---------------------------------
+includeNAsText <- "include NA's?"
+
 # Named group split function from Romain Francois
 named_group_split <- function(.tbl, ...) {
   grouped <- group_by(.tbl, ...)

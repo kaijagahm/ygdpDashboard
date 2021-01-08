@@ -57,7 +57,6 @@ load("data/interpolations/surveySentencesTable.Rda")
 # I've separated out a few parts of the UI into separate scripts.
 # Note that this only works for code that doesn't depend on reactive values. I *should* have used Shiny Modules (https://shiny.rstudio.com/articles/modules.html), but I was intimidated, so I didn't.
 source("header.R") # the dashboard header (title etc)
-source("leftSidebar.R") # the initial left sidebar def (before updating selectInputs etc)
 source("rightSidebar.R") # the initial right sidebar def (before updating selectInputs etc)
 source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
 
@@ -78,7 +77,12 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     
     # HEADER ------------------------------------------------------------------
-    header = HEADER, # HEADER is defined in header.R.
+    header = dashboardHeaderPlus(
+      title = "YGDP Data Explorer",
+      tags$li(class = "dropdown", bookmarkButton(label = "Bookmark app state")),
+      enable_rightsidebar = TRUE,
+      rightSidebarIcon = "sliders"
+    ),
     
     
     # LEFT SIDEBAR ------------------------------------------------------------
@@ -239,10 +243,52 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                        type = "tabs",
                                        tabPanel(title = "Filter",
                                                 # Widgets defined in rightSidebar.R
-                                                ageWidget,
-                                                raceWidget,
-                                                genderWidget,
-                                                educationWidget,
+                                                div( # age widget
+                                                  h5("Age:"),
+                                                  checkboxInput("ageNAs", includeNAsText, value = TRUE),
+                                                  tabsetPanel(id = "ageTabs",
+                                                              type = "tabs",
+                                                              tabPanel("range",
+                                                                       br(),
+                                                                       sliderInput("ageSlider", label = NULL, 
+                                                                                   min = 18, 
+                                                                                   max = 100, 
+                                                                                   value = c(18, 100))),
+                                                              tabPanel("bins",
+                                                                       br(),
+                                                                       checkboxGroupButtons("ageButtons", label = NULL,
+                                                                                            choices = ageBinLevels,
+                                                                                            selected = ageBinLevels
+                                                                       ))
+                                                  )
+                                                ),
+                                                div( # race widget
+                                                  h5("Race:"),
+                                                  checkboxInput("raceNAs", includeNAsText, value = T),
+                                                  pickerInput("race", label = NULL,
+                                                              choices = raceLevels,
+                                                              selected = raceLevels,
+                                                              options = list(`actions-box` = TRUE),
+                                                              multiple = T)
+                                                ),
+                                                div( # gender widget
+                                                  h5("Gender:"),
+                                                  checkboxInput("genderNAs", includeNAsText, value = T),
+                                                  pickerInput("gender", label = NULL,
+                                                              choices = genderLevels,
+                                                              selected = genderLevels, 
+                                                              options = list(`actions-box` = TRUE), 
+                                                              multiple = T)
+                                                ),
+                                                div( # education widget
+                                                  h5("Education level:"),
+                                                  checkboxInput("educationNAs", includeNAsText, value = T),
+                                                  pickerInput("education", label = NULL, 
+                                                              choices = educationLevels, 
+                                                              selected = educationLevels, 
+                                                              options = list(`actions-box` = TRUE), 
+                                                              multiple = T)
+                                                ),
                                                 # The divs here put the buttons next to each other
                                                 div(style = "display:inline-block", 
                                                     actionButton("pointFiltersReset", "Reset",
