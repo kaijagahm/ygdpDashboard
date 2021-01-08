@@ -1317,7 +1317,12 @@ server <- function(input, output, session){
   # (INT) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApplyI|input$sentencesResetI, {
     # XXX here's another place where that bug is getting introduced.
+    print(paste0("Before updating input$colorCriteriaInterpolation: ", input$colorCriteriaInterpolation))
+    print(paste0("nSentencesI: ", nSentencesI()))
     val <- input$colorCriteriaInterpolation
+    # if(nSentencesI() == 3){
+    #   browser()
+    # }
     choices1 <- "Sentence 1 ratings"
     choices2 <- c("Sentence 1 ratings",
                   "Sentence 2 ratings",
@@ -1348,35 +1353,18 @@ server <- function(input, output, session){
       )
     }else if(nSentencesI() == 2){
       updateSelectInput(session, "colorCriteriaInterpolation",
-                        choices = c("Sentence 1 ratings",
-                                    "Sentence 2 ratings",
-                                    "Difference (1-2)",
-                                    "Difference (2-1)",
-                                    "Mean rating",
-                                    "Min rating",
-                                    "Max rating"),
+                        choices = choices2,
                         selected = ifelse(val %in% choices2, val, "Sentence 1 ratings"))
     }else if(nSentencesI() == 3){
       updateSelectInput(session, "colorCriteriaInterpolation",
-                        choices = c("Sentence 1 ratings",
-                                    "Sentence 2 ratings",
-                                    "Sentence 3 ratings",
-                                    "RGB scale",
-                                    "Mean rating",
-                                    "Median rating",
-                                    "Min rating",
-                                    "Max rating"),
+                        choices = choices3,
                         selected = ifelse(val %in% choices3, val, "Sentence 1 ratings"))
     }else{
       updateSelectInput(session, "colorCriteriaInterpolation",
-                        choices = c(paste0("Sentence ", 
-                                           activeSentencesI(), " ratings"),
-                                    "Mean rating",
-                                    "Median rating",
-                                    "Min rating",
-                                    "Max rating"),
+                        choices = choicesMore,
                         selected = ifelse(val %in% choicesMore, val, "Sentence 1 ratings"))
     }
+    print(paste0("After updating input$colorCriteriaInterpolation: ", input$colorCriteriaInterpolation))
   },
   label = "oeUpdateColorCriteriaInterpolation")
   
@@ -1386,6 +1374,7 @@ server <- function(input, output, session){
   observeEvent(input$colorCriteriaInterpolation, { # reassign the value of colorColI based on input$colorCriteriaInterpolation
     # The below lines just translate the plain-text choices that people see into the column names.
     ## Another way to do this, which I'm only just now thinking of, would be to define the choices in the selectInput as 'Name people see = colName', which I believe you can do. Ah well. Another change that might make things more efficient but that probably isn't worth the risk of breaking things.
+    print(paste0("Before updating colorColI(): ", colorColI()))
     if(grepl("ratings", input$colorCriteriaInterpolation)){
       colorColI(input$colorCriteriaInterpolation %>% 
                   str_replace(., "ratings", "") %>% 
@@ -1407,6 +1396,8 @@ server <- function(input, output, session){
     }else if(input$colorCriteriaInterpolation == "RGB scale"){
       colorColI("rgbColor")
     }
+    
+    print(paste0("After updating colorColI(): ", colorColI()))
   },
   label = "oeUpdateColorCriteriaInterpolation")
   
