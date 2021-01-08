@@ -5,6 +5,7 @@ Welcome! The ygdpDashboard is an interactive data explorer dashboard that I (Kai
 The current version of the app can be found here: https://kaijagahm.shinyapps.io/ygdpDashboard/
 
 ### Directory Tree
+```
 .
 ├── README.md
 ├── dashboardFunctions.R
@@ -42,6 +43,7 @@ The current version of the app can be found here: https://kaijagahm.shinyapps.io
 │   ├── ygdpDashboardSketch.20201007.2.pdf
 │   └── ygdpDashboardSketch.20201007.pdf
 └── ygdpDashboard.Rproj
+```
 
 ### Known bugs
 *For a full list of known issues, please see the [issue tracker](https://github.com/kaijagahm/ygdpDashboard/issues).*
