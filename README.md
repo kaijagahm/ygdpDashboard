@@ -5,6 +5,43 @@ Welcome! The ygdpDashboard is an interactive data explorer dashboard that I (Kai
 The current version of the app can be found here: https://kaijagahm.shinyapps.io/ygdpDashboard/
 
 ### Directory Tree
+.
+├── README.md
+├── dashboardFunctions.R
+├── data
+│   ├── howTo
+│   │   ├── INTBanner.png
+│   │   ├── INTDisplaySettings.png
+│   │   ├── INTLeftSidebar.png
+│   │   ├── INTMap.png
+│   │   ├── PTSBanner.png
+│   │   ├── PTSDisplaySettings.png
+│   │   ├── PTSLeftSidebar.png
+│   │   ├── PTSMap.png
+│   │   └── PTSRightSidebar.png
+│   ├── interpolations
+│   │   ├── USNation20m
+│   │   │   └── cb_2018_us_nation_20m.shp (and other files)
+│   │   ├── interpDFLarge.Rda
+│   │   ├── interpDFMedium.Rda
+│   │   ├── interpDFSmall.Rda
+│   │   ├── interpListLarge.Rda
+│   │   ├── interpListMedium.Rda
+│   │   ├── interpListSmall.Rda
+│   │   └── surveySentencesTable.Rda
+│   └── points
+│       └── snl.Rda
+├── dataPrepScripts
+│   ├── INT.R
+│   └── PTS.R
+├── howToAboutContent.R
+├── libraries.R
+├── shinydashboard.R
+├── sketches
+│   ├── Dashboard\ sketch\ -\ Page\ 1.pdf
+│   ├── ygdpDashboardSketch.20201007.2.pdf
+│   └── ygdpDashboardSketch.20201007.pdf
+└── ygdpDashboard.Rproj
 
 ### Known bugs
 *For a full list of known issues, please see the [issue tracker](https://github.com/kaijagahm/ygdpDashboard/issues).*
