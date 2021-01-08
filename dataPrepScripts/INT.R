@@ -48,8 +48,7 @@ library(viridis)
 con <- dbConnect(RSQLite::SQLite(), "../R/database/currentDB/ygdpDB.db")
 
 # Load continental US outline ---------------------------------------------
-#load("data/data-raw/outlineContUS.Rda") # XXX remove this, I think
-a <- st_read("../R/data/inputs/shapefiles/USNation20m") %>%
+a <- st_read(here("data", "interpolations", "USNation20m")) %>%
   st_cast(., to = "POLYGON") %>%
   st_transform(., crs = 2163) %>%
   mutate(area = st_area(.))
