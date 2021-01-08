@@ -56,8 +56,6 @@ load("data/interpolations/surveySentencesTable.Rda")
 # Load separate UI scripts ------------------------------------------------
 # I've separated out a few parts of the UI into separate scripts.
 # Note that this only works for code that doesn't depend on reactive values. I *should* have used Shiny Modules (https://shiny.rstudio.com/articles/modules.html), but I was intimidated, so I didn't.
-source("header.R") # the dashboard header (title etc)
-source("rightSidebar.R") # the initial right sidebar def (before updating selectInputs etc)
 source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
 
 # UI function -------------------------------------------------------------
