@@ -1,5 +1,6 @@
 # Content for the "How to use" (HT) and "About" (AB) tabs of the YGDP dashboard. 
 # Since this is text and images and it doesn't use any reactive values, I've separated it out into its own script to avoid making shinydashboard.R really long.
+# Note: separating out other parts of the code that likewise didn't use any reactive values, like the sidebars, caused URL bookmarking to fail (see https://community.rstudio.com/t/shiny-bookmarked-url-state-fails-restores-main-app-page/91594/2). For some reason, keeping this file separate does *not* cause URL bookmarking to fail. Weird, but we'll go with it.
 # Author: Kaija Gahm
 # 31 December 2020
 
