@@ -20,6 +20,15 @@ named_group_split <- function(.tbl, ...) {
 # Connect to the database
 con <- dbConnect(RSQLite::SQLite(), file.path("..", "R", "database", "currentDB", "ygdpDB.db"))
 
+## test out survey 7
+rs7 <- tbl(con, "responses") %>%
+  filter(surveyID == "S7") %>%
+  collect() %>%
+  pull(responseID)
+dgs7 <- tbl(con, "demo_geo") %>%
+  filter(responseID %in% rs7) %>% 
+  collect()
+
 # Grab the data for all ratings: we need surveyID, sentenceID, sentenceText, constructionID, age, age bin, raceCats, gender, education, rating. Then make that into a list of data frames, one for each sentence, and then nest that under a list of surveys.
 
 r <- tbl(con, "ratings") %>%
@@ -37,6 +46,10 @@ r <- tbl(con, "ratings") %>%
   select(-countryID) %>%
   collect() # retrieve the data
 
+# test s7
+r %>%
+  filter(responseID %in% rs7) %>%
+  View() # looks good
 
 # Remove CU/CG sentences and 0 ratings  --------------------------------------
 r <- r %>%
@@ -124,6 +137,10 @@ r <- r %>%
                              other = "not sure",
                              male = "transgender (ftm)",
                              female = "transgender (mtf)"))
+
+r %>%
+  filter(responseID %in% rs7) %>%
+  View() # looks good
 
 table(r$raceCats, exclude = NULL)
 r <- r %>% # replace "NA" with <NA>
