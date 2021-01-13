@@ -38,6 +38,10 @@ load("data/points/snl.Rda") # snl stands for "sentences nested list". This is th
 # # AAA I deal with it in three steps:
 ## 1. Load the list, where each list element is an sf object (and therefore they all have the same hexagon geometries, which is redundant)
 load("data/interpolations/interpListMedium.Rda")
+# Explicitly set the crs (this is important for compatibility bw local and deployed versions of the sf package.)
+for(i in 1:length(interpListMedium)){
+  st_crs(interpListMedium[[i]]) <- 2163
+}
 
 ## 2. Grab an initial grid that's just one element of this list.
 mediumGrid <- interpListMedium[[defaultSentence1]] # This is the "initial" interpolation grid, shown when the app loads.
@@ -1435,4 +1439,4 @@ server <- function(input, output, session){
 
 
 # Run the app
-shinyApp(ui, server, enableBookmarking = "url") # enable URL bookmarking (although for now it's not working)
+shinyApp(ui, server, enableBookmarking = "url") # enable URL bookmarking 
