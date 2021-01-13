@@ -8,7 +8,6 @@
 #   4. For each sentence, generate three different interpolations (at the three different resolutions)
 #   5. Save three different lists: one for each resolution, with an element for each sentence. 
 
-
 # 1. Function to generate hexes -------------------------------------------
 # Function to make two hex grids (nodes and polygons), given a continental US object and an nHex parameter. Outputs a list of length 2 with items "nodes" and "polygons"
 # contUS is the input object containing all cities in the continental US. Usually, this will be contUS.Rda, which I load below when I actually use this function.
@@ -19,10 +18,11 @@ makeHexes <- function(outlineContUS, nHex = 30){
   message("generating polygons...")
   hexNodes <- outlineContUS %>%
     sf::st_make_grid(n = nHex, # defaults to 30 but can be specified by user.
-                     what = "points", # points at the center of each hex
+                     what = "centers", # points at the center of each hex
                      square = F # make the grid hexagonal, not square
                      ) %>%
     sf::st_as_sf() # convert to sf object.
+    
   
   # Make hex polygon grid
   hexPolygons <- outlineContUS %>%
@@ -30,6 +30,14 @@ makeHexes <- function(outlineContUS, nHex = 30){
                      # `what` defaults to polygons, whereas before we specified points.
                      square = F) %>%
     sf::st_as_sf() # convert to sf object
+  
+  # Crop each of these to outlineContUS
+  inds <- st_contains(x = outlineContUS,
+                      y = hexNodes) %>%
+    unlist()
+  
+  hexNodes <- hexNodes[inds,]
+  hexPolygons <- hexPolygons[inds,]
   
   l <- list(hexNodes, hexPolygons) %>% 
     setNames(c("nodes", "polygons"))
@@ -41,8 +49,19 @@ makeHexes <- function(outlineContUS, nHex = 30){
 library(RSQLite)
 library(here)
 library(tidyverse)
-library(sf)
+library(sf) # for spatial manipulations
 library(viridis)
+library(gstat) # for IDW interpolation
+
+# Named group split function from Romain Francois
+named_group_split <- function(.tbl, ...) {
+  grouped <- group_by(.tbl, ...)
+  names <- rlang::eval_bare(rlang::expr(paste(!!!group_keys(grouped), sep = " / ")))
+  
+  grouped %>% 
+    group_split() %>% 
+    rlang::set_names(names)
+}
 
 # Connect to the database -------------------------------------------------
 con <- dbConnect(RSQLite::SQLite(), "../R/database/currentDB/ygdpDB.db")
@@ -50,15 +69,22 @@ con <- dbConnect(RSQLite::SQLite(), "../R/database/currentDB/ygdpDB.db")
 # Load continental US outline ---------------------------------------------
 a <- st_read(here("data", "interpolations", "USNation20m")) %>%
   st_cast(., to = "POLYGON") %>%
-  st_transform(., crs = 2163) %>%
-  mutate(area = st_area(.))
+  st_transform(., crs = 2163) %>% # transform to planar
+  mutate(area = st_area(.)) # calculate area
 outlineContUS <- a %>%
-  filter(area == max(area))
+  filter(area == max(area)) # grab the continental US (i.e. the shape with the greatest area)
 
 # 2. Generate hex grids at three different resolutions --------------------
 hexes30 <- makeHexes(outlineContUS, nHex = 30)
 hexes50 <- makeHexes(outlineContUS, nHex = 50)
 hexes75 <- makeHexes(outlineContUS, nHex = 75)
+
+
+# 2.5 Check geometry types ------------------------------------------------
+if(!(st_geometry_type(hexes30[[1]]) %>% unique() == "POINT")|!(st_geometry_type(hexes50[[1]]) %>% unique() == "POINT")|!(st_geometry_type(hexes75[[1]]) %>% unique() == "POINT")){
+  stop("Error: the first element of at least one of the hex grids does not contain points. Double-check the arguments to st_make_grid in the makeHexes function.")
+}
+
 
 # 3. Get data needed for interpolations -----------------------------------
 r <- tbl(con, "ratings") %>%
@@ -74,29 +100,6 @@ r <- tbl(con, "ratings") %>%
   st_as_sf(coords = c("long", "lat"), crs = 4326) %>%
   st_transform(2163)
 
-# Replace the ratings that have "NA" for sentenceID with "1295", after checking that they all belong to S12
-naSentenceIDs <- r %>%
-  filter(sentenceID == "NA")
-responseIDs <- naSentenceIDs %>% pull(responseID) %>% unique()
-s12responses <- tbl(con, "responses") %>% filter(surveyID == "S12") %>% collect()
-sum(!(responseIDs %in% s12responses$responseID)) # none of them do not appear in the survey 12 responses. Good. That's as we expected. So safe to call these instances of sentenceID == "NA" 1295. 
-
-r <- r %>% # replace "NA" with "1295"
-  mutate(sentenceID = case_when(sentenceID == "NA" ~ "1295",
-                                TRUE ~ sentenceID))
-
-# Split r into a list with an object for each sentence
-## named group split function from Romain Francois
-named_group_split <- function(.tbl, ...) {
-  grouped <- group_by(.tbl, ...)
-  names <- rlang::eval_bare(rlang::expr(paste(!!!group_keys(grouped), sep = " / ")))
-  
-  grouped %>% 
-    group_split() %>% 
-    rlang::set_names(names)
-}
-
-
 ## split into a list where each element is the data for one sentence
 s <- dbReadTable(con, "sentences") %>% select(sentenceID, sentenceText)
 sentencesList <- r %>%
@@ -106,16 +109,14 @@ sentencesList <- r %>%
   named_group_split(., sentenceText)
 names(sentencesList) # good!
 
-
 # 4. For each sentence, generate three different interpolations -----------
-
+# NOTE: before I did this work in R, Jim did interpolations in GIS, which ended up in the mapbook (https://ling.auf.net/lingbuzz/005277). I've used the same parameters here: power = 0.5, nPoints = 12. 
 # function to generate interpolations
-hexIDW <- function(sentenceData, hexGrids, nPoints = 12, power = 0.5){
-  # Libraries
-  library(gstat) # for interpolation
-  library(dplyr) # for pipes
-  library(sf) # for spatial stuff
-  
+hexIDW <- function(sentenceData, 
+                   hexGrids, 
+                   nPoints = 12, # default value is from the mapbook
+                   power = 0.5 # default value is from the mapbook
+                   ){
   # Check that hexGrids is a list
   if(is.list(hexGrids) & length(hexGrids) == 2){
     hexNodes <- hexGrids[["nodes"]]
@@ -146,19 +147,38 @@ hexIDW <- function(sentenceData, hexGrids, nPoints = 12, power = 0.5){
 }
 
 # Create the interpolation lists for each sentence
-interpListLarge <- lapply(sentencesList, function(x) hexIDW(sentenceData = x, hexGrids = hexesResolutionList[[1]])) %>% setNames(names(sentencesList))
-interpListMedium <- lapply(sentencesList, function(x) hexIDW(sentenceData = x, hexGrids = hexesResolutionList[[2]])) %>% setNames(names(sentencesList))
-interpListSmall <- lapply(sentencesList, function(x) hexIDW(sentenceData = x, hexGrids = hexesResolutionList[[3]])) %>% setNames(names(sentencesList))
+interpListLarge <- lapply(sentencesList, 
+                          function(x) hexIDW(sentenceData = x, 
+                                             hexGrids = hexes30)) %>%
+  setNames(names(sentencesList))
 
+interpListMedium <- lapply(sentencesList, 
+                           function(x) hexIDW(sentenceData = x, 
+                                              hexGrids = hexes50)) %>%
+  setNames(names(sentencesList))
+
+interpListSmall <- lapply(sentencesList, 
+                          function(x) hexIDW(sentenceData = x, 
+                                             hexGrids = hexes75)) %>%
+  setNames(names(sentencesList))
+
+
+# Check -------------------------------------------------------------------
+if(!nrow(interpListLarge[[1]] != nrow(hexes30[[1]]))|!nrow(interpListMedium[[1]] != nrow(hexes50[[1]]))|!nrow(interpListSmall[[1]] != nrow(hexes75[[1]]))){
+  stop("Number of hexes does not match the number in the input grid for at least one of the interpLists.")
+}
+
+
+# XXX Next steps: run the rest of the script. Recreate the surveysentencestable or whatever it's called, and see about including information for survey 6 and 7 in it to fix the bug in the app.
 
 # 5. Save the interpolation lists -----------------------------------------
-save(interpListLarge, file = here("data", "outputs", "interpListLarge.Rda"))
-save(interpListMedium, file = here("data", "outputs", "interpListMedium.Rda"))
-save(interpListSmall, file = here("data", "outputs", "interpListSmall.Rda"))
+save(interpListLarge, file = here("data", "interpolations", "interpListLarge.Rda"))
+save(interpListMedium, file = here("data", "interpolations", "interpListMedium.Rda"))
+save(interpListSmall, file = here("data", "interpolations", "interpListSmall.Rda"))
 
-# load(here("data", "outputs", "interpListLarge.Rda"))
-# load(here("data", "outputs", "interpListMedium.Rda"))
-# load(here("data", "outputs", "interpListSmall.Rda"))
+load(here("data", "interpolations", "interpListLarge.Rda"))
+load(here("data", "interpolations", "interpListMedium.Rda"))
+load(here("data", "interpolations", "interpListSmall.Rda"))
  
 # test it out by plotting
 interpListSmall[[1]] %>% 
@@ -211,20 +231,56 @@ names(small)[1] <- names(interpListSmall)[1]
 str(small, 1)
 interpDFSmall <- small
 
-save(interpDFLarge, file = here("data", "outputs", "interpDFLarge.Rda"))
-save(interpDFMedium, file = here("data", "outputs", "interpDFMedium.Rda"))
-save(interpDFSmall, file = here("data", "outputs", "interpDFSmall.Rda"))
-
+save(interpDFLarge, file = here("data", "interpolations", "interpDFLarge.Rda"))
+save(interpDFMedium, file = here("data", "interpolations", "interpDFMedium.Rda"))
+save(interpDFSmall, file = here("data", "interpolations", "interpDFSmall.Rda"))
 
 # Survey sentences table --------------------------------------------------
 s <- dbReadTable(con, "sentences") %>%
+  mutate(sentenceText = str_replace_all(sentenceText, "’", "'"))
+
+ss <- dbReadTable(con, "survey_sentences")
+ss %>% pull(surveyID) %>% table()
+# looks like surveys 6 and 7 are missing entries in this table. That is concerning! I'm going to go back and fix that in the database. But in the mean time, I will add them in from the raw data.
+s6raw <- read.csv("../R/data/inputs/all_surveys_names_fixed/gd6.csv")
+s7raw <- read.csv("../R/data/inputs/all_surveys_names_fixed/gd7.csv")
+
+nums6 <- s6raw %>%
+  select(matches("\\d{4}")) %>%
+  select(-matches("comments")) %>%
+  names() %>%
+  str_replace(., "X", "") %>%
+  substr(., 1, 6) %>%
+  str_replace(., "\\.[A-Z]", "") %>% # remove capital letters
+  as.data.frame() %>%
+  setNames(., "sentenceID") %>%
+  mutate(updateID = NA,
+         surveyID = "S6")
+
+nums7 <- s7raw %>%
+  select(matches("\\d{4}")) %>%
+  select(-matches("comments|cmments")) %>%
+  names() %>%
+  str_replace(., "X", "") %>%
+  substr(., 1, 6) %>%
+  str_replace(., "\\.[A-Z]", "") %>% # remove capital letters
+  str_replace(., "\\.\\.", "") %>%
+  as.data.frame() %>%
+  setNames(., "sentenceID") %>%
+  mutate(updateID = NA,
+         surveyID = "S7")
+
+## join these to SURVEY_SENTENCES
+ss <- ss %>%
+  bind_rows(., nums6, nums7)
+
+surveySentencesTable <- dbReadTable(con, "sentences") %>%
   mutate(sentenceText = str_replace_all(sentenceText, "’", "'")) %>%
-  left_join(dbReadTable(con, "survey_sentences") %>%
+  left_join(ss %>% # survey_sentences, created/modified above.
               select(sentenceID, surveyID)) %>%
   select(sentenceID, sentenceText, surveyID, constructionID) %>%
   distinct() %>%
   left_join(dbReadTable(con, "constructions") %>% 
               select(constructionID, constructionName),
             by = "constructionID")
-surveySentencesTable <- s
-save(surveySentencesTable, file = here("data", "outputs", "surveySentencesTable.Rda"))
+save(surveySentencesTable, file = here("data", "interpolations", "surveySentencesTable.Rda"))
