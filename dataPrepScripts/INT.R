@@ -241,42 +241,10 @@ s <- dbReadTable(con, "sentences") %>%
 
 ss <- dbReadTable(con, "survey_sentences")
 ss %>% pull(surveyID) %>% table()
-# looks like surveys 6 and 7 are missing entries in this table. That is concerning! I'm going to go back and fix that in the database. But in the mean time, I will add them in from the raw data.
-s6raw <- read.csv("../R/data/inputs/all_surveys_names_fixed/gd6.csv")
-s7raw <- read.csv("../R/data/inputs/all_surveys_names_fixed/gd7.csv")
-
-nums6 <- s6raw %>%
-  select(matches("\\d{4}")) %>%
-  select(-matches("comments")) %>%
-  names() %>%
-  str_replace(., "X", "") %>%
-  substr(., 1, 6) %>%
-  str_replace(., "\\.[A-Z]", "") %>% # remove capital letters
-  as.data.frame() %>%
-  setNames(., "sentenceID") %>%
-  mutate(updateID = NA,
-         surveyID = "S6")
-
-nums7 <- s7raw %>%
-  select(matches("\\d{4}")) %>%
-  select(-matches("comments|cmments")) %>%
-  names() %>%
-  str_replace(., "X", "") %>%
-  substr(., 1, 6) %>%
-  str_replace(., "\\.[A-Z]", "") %>% # remove capital letters
-  str_replace(., "\\.\\.", "") %>%
-  as.data.frame() %>%
-  setNames(., "sentenceID") %>%
-  mutate(updateID = NA,
-         surveyID = "S7")
-
-## join these to SURVEY_SENTENCES
-ss <- ss %>%
-  bind_rows(., nums6, nums7)
 
 surveySentencesTable <- dbReadTable(con, "sentences") %>%
   mutate(sentenceText = str_replace_all(sentenceText, "’", "'")) %>%
-  left_join(ss %>% # survey_sentences, created/modified above.
+  left_join(ss %>% # survey_sentences, created above.
               select(sentenceID, surveyID)) %>%
   select(sentenceID, sentenceText, surveyID, constructionID) %>%
   distinct() %>%
