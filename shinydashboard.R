@@ -374,7 +374,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
 server <- function(input, output, session){
   # Enable URL bookmarking
   enableBookmarking(store = "url")
-
+  
   # Update body tabs --------------------------------------------------------
   ## Here's where the hidden vs. non-hidden tabs thing explicitly comes into play.
   observeEvent(input$sidebarItemExpanded, {
@@ -408,7 +408,7 @@ server <- function(input, output, session){
     }
   },
   label = "oeUpdateRSTabs")
-
+  
   # (HT) Images -------------------------------------------------------------
   # Render images to display in the How To Use section. Images are stored in the data/ folder of the app directory.
   ## (PTS)
@@ -534,7 +534,7 @@ server <- function(input, output, session){
     if(input$ageTabs == "range"){
       rightRV$ageSlider <- as.numeric(input$ageSlider)
       rightRV$ageButtons <- NULL
-    ## If the age buttons widget is currently selected, then do the opposite: set "range" to NULL etc.
+      ## If the age buttons widget is currently selected, then do the opposite: set "range" to NULL etc.
     }else{
       rightRV$ageButtons <- as.character(input$ageButtons)
       rightRV$ageSlider <- NULL
@@ -561,7 +561,7 @@ server <- function(input, output, session){
            1:length(.), # second input: a vector of numbers from 1 to length(.)
            ~mutate(..1, # add a column called "whichSentence" to each df, with the corresponding number. This works because `surveyData()[leftRV$chosenSentences]` (above) subsets those sentences from the list *in order*
                    whichSentence = paste0("sentence", ..2))
-           ) %>%
+      ) %>%
       # Filter by ratings for each sentence
       map2(., # first input: the list of df's fed in from the pipe above
            leftRV$chosenRatings, # second input: the chosen ratings for each sentence
@@ -694,7 +694,7 @@ server <- function(input, output, session){
                          fillOpacity = 1,
                          # We define a "group" for these points in order to take advantage of the built-in leaflet legend functionality.
                          group = checkboxText, # defined in dashboardFunctions.R
-                         )
+        )
     }else{ # if all points fail to meet the criteria, then we plot only the black points.
       leafletProxy("pointMap") %>%
         clearMarkers() %>% # remove any markers
@@ -720,7 +720,7 @@ server <- function(input, output, session){
         addLayersControl(
           overlayGroups = checkboxText, # defined in dashboardFunctions.R
           options = layersControlOptions(collapsed = F)
-          ) 
+        ) 
       # If we're coloring by individual sentence ratings, then we add a checkbox control and also a color legend.
     }else{
       leafletProxy("pointMap") %>%
@@ -735,8 +735,8 @@ server <- function(input, output, session){
                   opacity = 1,
                   # transform labels to be in decreasing order
                   labFormat = labelFormat(transform = function(x) sort(x, decreasing = TRUE)
-                                          )
                   )
+        )
     }
   },
   label = "oePointMapControls")
@@ -769,7 +769,7 @@ server <- function(input, output, session){
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
                            group = checkboxText # defined in dashboardFunctions.R
-                           )
+          )
       }else{
         leafletProxy("pointMap") %>%
           clearMarkers() %>%
@@ -782,11 +782,11 @@ server <- function(input, output, session){
                            radius = 2, opacity = 1,
                            fillOpacity = 1,
                            group = checkboxText # defined in dashboardFunctions.R
-                           )
+          )
       }
     },
     label = "oePointMapChangeColors")
-        
+    
     ### Controls (same as above)
     observeEvent(wideDat(), {
       if(colorCol() == "meetsCriteria"){
@@ -831,11 +831,11 @@ server <- function(input, output, session){
   observeEvent(input$addSentence, { # when addSentence button is clicked
     ## AAA Note the difference in capitalization here! This is important. The div for the sentence 1 ui is called "sentence1controls", but the divs for subsequent sentence UI's are called "sentence[#]Controls", with a capital C. This is a bit hacky, but basically I did this so that when the user clicks the "Reset" button, I could tell the program to remove all of the divs with "Controls" in their id's, without also removing the UI for the first sentence (since we would never want to remove ALL the sentence UI elements.)
     shiny::insertUI(selector = ifelse(nSentences() == 1, "#sentence1controls", 
-                               paste0("#sentence", max(activeSentences()), "Controls")),
-             where = "afterEnd", # add new selector after the last previous selector
-             # addSentenceUI is defined in dashboardFunctions.R. Don't confuse with with insertUI, which is native to Shiny.
-             ui = addSentenceUI(id = last(activeSentences()) + 1, 
-                                dat = surveySentencesDataList())) # make a sentence UI with the new number
+                                      paste0("#sentence", max(activeSentences()), "Controls")),
+                    where = "afterEnd", # add new selector after the last previous selector
+                    # addSentenceUI is defined in dashboardFunctions.R. Don't confuse with with insertUI, which is native to Shiny.
+                    ui = addSentenceUI(id = last(activeSentences()) + 1, 
+                                       dat = surveySentencesDataList())) # make a sentence UI with the new number
     
     # update activeSentences
     activeSentences(c(activeSentences(), 
@@ -1005,8 +1005,8 @@ server <- function(input, output, session){
   ## Define initial survey data:
   surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[
     surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]
-    ],
-                             label = "rvSurveyDataI") 
+  ],
+  label = "rvSurveyDataI") 
   
   
   ## Update to new survey data if input$surveyI has changed
@@ -1033,7 +1033,7 @@ server <- function(input, output, session){
   observeEvent(input$sentencesApplyI, {
     leftRVI$chosenSentences <- reactiveValuesToList(input)[
       paste0("sentence", activeSentencesI(), "I")
-      ] %>% # e.g. "sentence1I"
+    ] %>% # e.g. "sentence1I"
       unlist() # note: this is a VECTOR
   }, 
   ignoreInit = T,
@@ -1272,13 +1272,13 @@ server <- function(input, output, session){
   observeEvent(input$addSentenceI, { # when addSentenceI button is clicked
     shiny::insertUI(selector = ifelse(nSentencesI() == 1, "#sentence1controlsI", 
                                       # see note in PTS mode code above about the difference between "controls" and "Controls" for reset-button purposes.
-                               paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
-             where = "afterEnd",
-             # addSentenceUII is defined in dashboardFunctions.R
-             ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
-                                 inputList = surveySentencesDataListI(), 
-                                 surveyIDString = paste0("S", input$surveyI),
-                                 surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
+                                      paste0("#sentence", max(activeSentencesI()), "Controls", "I")),
+                    where = "afterEnd",
+                    # addSentenceUII is defined in dashboardFunctions.R
+                    ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
+                                        inputList = surveySentencesDataListI(), 
+                                        surveyIDString = paste0("S", input$surveyI),
+                                        surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
     
     # update activeSentencesI
     activeSentencesI(c(activeSentencesI(), 
