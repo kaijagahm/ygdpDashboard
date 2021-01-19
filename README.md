@@ -3,8 +3,8 @@ title: "YGDP Dashboard README"
 output: 
   html_document: 
     toc: yes
-    toc_depth: 3
     keep_md: yes
+    preserve_yaml: false
 ---
 
 
@@ -21,6 +21,8 @@ This is a "tree" representation of the subfolders in this directory. The `.` at 
 ```
 ## .
 ## ├── README.Rmd
+## ├── README.html
+## ├── README.md
 ## ├── README.pdf
 ## ├── dashboardFunctions.R
 ## ├── data

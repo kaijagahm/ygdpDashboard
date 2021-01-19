@@ -3,8 +3,8 @@ title: "YGDP Dashboard README"
 output: 
   html_document: 
     toc: yes
-    toc_depth: 3
     keep_md: yes
+    preserve_yaml: false
 ---
 
 ```{r setup, include=FALSE}
