@@ -7,10 +7,7 @@ output:
     keep_md: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(fs)
-```
+
 
 # YGDP Dashboard
 
@@ -20,8 +17,28 @@ README file for the YGDP Dashboard, developed in R Shiny.
 
 This is a "tree" representation of the subfolders in this directory. The `.` at the top represents the top level directory (folder), called "ygdpDashboard". Note that this tree does not include all files in all the subdirectories.
 
-```{r echo = F}
-fs::dir_tree(recurse = 1)
+
+```
+## .
+## ├── README.Rmd
+## ├── README.pdf
+## ├── dashboardFunctions.R
+## ├── data
+## │   ├── howTo
+## │   ├── interpolations
+## │   └── points
+## ├── dataPrepScripts
+## │   ├── INT.R
+## │   └── PTS.R
+## ├── howToAboutContent.R
+## ├── rsconnect
+## │   └── documents
+## ├── shinydashboard.R
+## ├── sketches
+## │   ├── Dashboard sketch - Page 1.pdf
+## │   ├── ygdpDashboardSketch.20201007.2.pdf
+## │   └── ygdpDashboardSketch.20201007.pdf
+## └── ygdpDashboard.Rproj
 ```
 
 -   **README.Rmd:** used to generate README.pdf.
