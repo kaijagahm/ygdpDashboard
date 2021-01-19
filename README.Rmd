@@ -45,8 +45,6 @@ fs::dir_tree(recurse = 1)
 
 -   **howToAboutContent.R**: static content for the "How to use" and "About" sections of the app. This script is sourced in "shinydashboard.R". I've just chosen to write the content in a separate R script in order to reduce clutter in the main app script. This is the script to edit if you want to add or change the information presented in the "How to use" and "About" sections.
 
--   **libraries.R**: list of packages to be loaded, sourced by "dashboardFunctions.R" and "shinydashboard.R"
-
 -   **sketches/**: preliminary dashboard sketches, which I used to design the final product.
 
 -   **ygdpDashboard.Rproj**: the .Rproj "portal" for accessing the R scripts in this directory. Open this first, and then use the "files" pane in RStudio to open other scripts. If you don't do this, the file paths won't work and your app won't run! For more information about this, see the README in the top-level directory, "kaijaFiles".
