@@ -1121,15 +1121,24 @@ server <- function(input, output, session){
   observeEvent(datI(), { 
     ## If the selected color criteria is a diff color, then we need to use a separate palette.
     # AAA NOTE: it *really* seems like there should be a way to color the points along the lines of ifelse(colorColI() %in% c("diff21", "diff12"), ~continuous44, ~continuousBlueYellow) or something (that's pseudocode, but you get the idea). But I don't think leaflet supports logic like that within the 'color' argument--I tried and it didn't work. That's why I have these clunky if/else statements with repeats of all the map parameters in each one. Surely this can be done better!
-    if(colorColI() %in% c("diff21", "diff12")){
+    
+    # Some if-else logic, written by Ian. Create a new object colorcolilocal that gets around the problem with updateSelectInput for the color criteria choices. colorcolilocal will be used in place of colorColI() in the rest of this observer. 
+    colorcolilocal = colorColI() # create a new version of colorColI(), to be used in this observer.
+    if (((colorcolilocal == "diff21") | (colorcolilocal == "diff12")) & (nSentencesI() != 2)){ # if color diff
+      colorcolilocal = "sentence1.pred"
+    }else if ((colorcolilocal == "rgbColor") & (nSentencesI() != 3)){
+      colorcolilocal = "sentence1.pred"
+    }
+    print(paste0("cci: ", colorcolilocal)) # print to console to understand what's going on
+    if(colorcolilocal %in% c("diff21", "diff12")){ # Ian just changed these if/elses to depend on colorcolilocal instead of on colorColI()
       leafletProxy("interpolationMap") %>%
         clearShapes() %>% # remove existing polygons
         clearControls() %>% # Despite the name, also clears legends to avoid ending up with duplicates.
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
-                    color = ~continuous44(eval(as.symbol(colorColI()))),
-                    fillColor = ~continuous44(eval(as.symbol(colorColI()))),
+                    color = ~continuous44(eval(as.symbol(colorcolilocal))),
+                    fillColor = ~continuous44(eval(as.symbol(colorcolilocal))),
                     fillOpacity = 1,
                     opacity = 1) %>%
         addLegend("bottomright", pal = continuous44Legend, values = -4:4,
@@ -1137,7 +1146,7 @@ server <- function(input, output, session){
                   opacity = 1,
                   labFormat = labelFormat(transform = function(x) 
                     sort(x, decreasing = TRUE)))
-    }else if(colorColI() == "rgbColor"){
+    }else if(colorcolilocal == "rgbColor"){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
         clearControls() %>% 
@@ -1173,8 +1182,8 @@ server <- function(input, output, session){
         addPolygons(data = datI() %>%
                       st_transform(4326),
                     weight = 1,
-                    color = ~continuousBlueYellow(eval(as.symbol(colorColI()))),
-                    fillColor =~continuousBlueYellow(eval(as.symbol(colorColI()))),
+                    color = ~continuousBlueYellow(eval(as.symbol(colorcolilocal))),
+                    fillColor =~continuousBlueYellow(eval(as.symbol(colorcolilocal))),
                     fillOpacity = 1,
                     opacity = 1) %>%
         addLegend("bottomright", pal = continuousBlueYellowLegend, values = 1:5,
@@ -1191,6 +1200,7 @@ server <- function(input, output, session){
   observeEvent(input$interpolationDisplaySettingsApply, {
     req(datI()) # datI() must already exist
     req(colorColI())
+    print(paste0("cci: ", colorColI()))
     if(colorColI() %in% c("diff21", "diff12")){
       leafletProxy("interpolationMap") %>%
         clearShapes() %>%
