@@ -937,7 +937,9 @@ server <- function(input, output, session){
   label = "oeUpdateSentenceChoices")
   
   # (PTS) Update color criteria choices -------------------------------------------
+   # XXX
   observeEvent(input$sentencesApply|input$sentencesReset, {
+    print(paste0("Before updating input$colorCriteriaPoints: ", input$colorCriteriaPoints))
     val <- input$colorCriteriaPoints # this is the value that *was* selected before the update goes through
     choices1 <- c("Sentence 1 ratings", "Selected criteria") # these are the choices that are available for 1 sentence
     
@@ -954,9 +956,9 @@ server <- function(input, output, session){
                                     "Min rating",
                                     "Max rating",
                                     "Selected criteria"),
-                        # XXX This is a problem! The way I phrased the logic here causes the app to crash at certain points. See issue #35 for more details.
                         selected = val)
     }
+    print(paste0("After updating input$colorCriteriaPoints: ", input$colorCriteriaPoints))
   }, 
   ignoreInit = T,
   label = "oeUpdateColorCriteriaPoints")
@@ -965,6 +967,7 @@ server <- function(input, output, session){
   colorCol <- reactiveVal({"sentence1"}, # initial value is sentence1
                           label = "rvColorCol") 
   observeEvent(input$colorCriteriaPoints, { # reassign the value based on the input
+    print(paste0("Before updating colorCol(): ", colorCol()))
     if(grepl("ratings", input$colorCriteriaPoints)){
       colorCol(input$colorCriteriaPoints %>% 
                  # translate the text the user sees ("Sentence 1 ratings") to the column we have in the data ("sentence1").
@@ -983,6 +986,7 @@ server <- function(input, output, session){
     }else if(input$colorCriteriaPoints == "Max rating"){
       colorCol("max")
     }
+    print(paste0("After updating colorCol(): ", colorCol()))
   },
   label = "oeUpdateColorCol")
   
