@@ -937,7 +937,6 @@ server <- function(input, output, session){
   label = "oeUpdateSentenceChoices")
   
   # (PTS) Update color criteria choices -------------------------------------------
-   # XXX
   observeEvent(input$sentencesApply|input$sentencesReset, {
     print(paste0("Before updating input$colorCriteriaPoints: ", input$colorCriteriaPoints))
     val <- input$colorCriteriaPoints # this is the value that *was* selected before the update goes through
@@ -1334,7 +1333,6 @@ server <- function(input, output, session){
   
   # (INT) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApplyI|input$sentencesResetI, {
-    # XXX here's another place where that bug is getting introduced.
     print(paste0("Before updating input$colorCriteriaInterpolation: ", input$colorCriteriaInterpolation))
     print(paste0("nSentencesI: ", nSentencesI()))
     val <- input$colorCriteriaInterpolation
@@ -1417,7 +1415,7 @@ server <- function(input, output, session){
     
     print(paste0("After updating colorColI(): ", colorColI()))
   },
-  label = "oeUpdateColorCriteriaInterpolation")
+  label = "oeUpdateColorColI")
   
   # (INT) Update sentence choices -------------------------------------------------
   # This observer listens to surveySentencesDataListI(), not surveyDataI(), since the latter is only updated when you click "Apply".
