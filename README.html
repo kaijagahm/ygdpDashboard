@@ -197,6 +197,7 @@ summary {
 <ul>
 <li><a href="#files-in-this-repo">Files in this repo</a></li>
 <li><a href="#how-to-use-this-repo">How to use this repo</a></li>
+<li><a href="#code-notes">Code notes</a></li>
 </ul></li>
 </ul>
 </div>
@@ -256,6 +257,19 @@ summary {
 <li><p>If you’re reading this on GitHub and don’t yet have this repository/folder downloaded, download it using the green “Code” button. Otherwise, proceed to step 3.</p></li>
 <li><p>Open the .Rproj file, “ygdpDashboard.Rproj”.</p></li>
 <li><p>Use the “files” pane within RStudio to open “shinydashboard.R”. Click “Run app” in the top right corner of the RStudio script pane.</p></li>
+</ol>
+</div>
+<div id="code-notes" class="section level3">
+<h3>Code notes</h3>
+<p><em>Here are some notes about the app code that you might find useful. As of 20 January 2021, these are also present as comments in the actual shinydashboard.R code, but I’m also putting them here in the README to make them more prominent and (hopefully) more permanent. Read these before you attempt to read through the code. I hope they’ll be useful.</em></p>
+<ol style="list-style-type: decimal">
+<li><p>I use consistent acronyms in this script to help organize the code. (PTS) refers to “points mode” (i.e. the tab of the app that shows a map with points on it). (INT) refers to “interpolation mode”. (HT) refers to the “How to use” tab. (AB) refers to the “About” tab.</p></li>
+<li><p>“XXX” is a marker I use when there is something in the code I want to come back to and fix. It’s easy to find with Command + F in RStudio.</p></li>
+<li><p>Divider bars separate the sections of this code. RStudio automatically recognizes those as section breaks and uses them to create a very useful **code outline**. You can access it by clicking on the “Show document outline” button (a bunch of stacked horizontal lines) at the top righthand corner of the script panel in RStudio, or with the keyboard shortcut Shift + Command + O (on a Mac). This outline is where the (PTS), (INT), etc. abbreviations really come in handy.</p></li>
+<li><p>Common formatting abbreviations: `br()` inserts a line break. `div()` creates an html div, which can encompass other Shiny or html elements. `hr()` creates a horizontal rule/line to separate sections. `a()` creates a hyperlink. `p()` creates a paragraph of text.</p></li>
+<li><p>the ‘ignoreInit = T’ argument is used a lot in `observeEvent()` calls. This argument means that when the observer is first created, its handler expression (i.e. the code that says what to DO after observing the condition) does not run, regardless of whether the triggering condition is true. Prevents weird side effects and unnecessary slowdown on app load.</p></li>
+<li><p>In addition to the required `label` argument in inputs, which provides a unique identifier for that input, I have included the optional `label` argument in my `reactiveValues`, `reactiveVal`, `reactive`, `observe`, and `observeEvent` objects. This is primarily useful for visualizing the app’s reactivity in the Shiny reactlog (<a href="https://rstudio.github.io/reactlog/)." class="uri">https://rstudio.github.io/reactlog/).</a> It also makes it easier to refer to parts of the code by name, e.g. in Github issues.</p></li>
+<li><p>There are some places in the app where I took hacky shortcuts that made things work but that might trip you up if you try to modify seemingly-basic things about the app. I apologize in advance! I was learning this as I went. I’ve marked places that I think fall into this category with # AAA.</p></li>
 </ol>
 <div id="acknowledgements" class="section level4">
 <h4>Acknowledgements</h4>
