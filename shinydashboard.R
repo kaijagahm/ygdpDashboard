@@ -17,6 +17,8 @@
 
 ## - the 'ignoreInit = T' argument is used a lot in `observeEvent()` calls. This argument means that when the observer is first created, its handler expression (i.e. the code that says what to DO after observing the condition) does not run, regardless of whether the triggering condition is true. Prevents weird side effects and unnecessary slowdown on app load.
 
+## - In addition to the required `label` argument in inputs, which provides a unique identifier for that input, I have included the optional `label` argument in my `reactiveValues`, `reactiveVal`, `reactive`, `observe`, and `observeEvent` objects. This is primarily useful for visualizing the app's reactivity in the Shiny reactlog (https://rstudio.github.io/reactlog/). It also makes it easier to refer to parts of the code by name, e.g. in Github issues.
+
 ## - There are some places in the app where I took hacky shortcuts that made things work but that might trip you up if you try to modify seemingly-basic things about the app. I apologize in advance! I was learning this as I went. I've marked places that I think fall into this category with # AAA.
 
 # Load required packages (libraries) --------------------------------------
