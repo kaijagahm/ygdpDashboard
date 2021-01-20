@@ -81,7 +81,9 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     # HEADER ------------------------------------------------------------------
     header = dashboardHeaderPlus(
       title = "YGDP Data Explorer",
-      tags$li(class = "dropdown", bookmarkButton(label = "Bookmark app state")),
+      #XXX commented out bookmark button because bookmarking isn't working. See github issue 33 for more details.
+      # tags$li(class = "dropdown", 
+      #         bookmarkButton(label = "Bookmark app state")),
       enable_rightsidebar = TRUE,
       rightSidebarIcon = "sliders"
     ),
@@ -376,8 +378,70 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
 
 # Server function ---------------------------------------------------------
 server <- function(input, output, session){
-  # Enable URL bookmarking
-  enableBookmarking(store = "url")
+  # Bookmarking -------------------------------------------------------------
+  ## enable bookmarking
+  # XXX NOTE: I've commented all of this out because I couldn't get it to work. See github issue 33 for more details.
+  #enableBookmarking(store = "url")
+  
+  # Create a reactiveValues object to store the reactiveVal objects and the reactive expressions
+  #observe({
+  #   rvo <- reactiveValues(
+  #     ns <- nSentences(),
+  #     as <- activeSentences(),
+  #     sd <- surveyData(),
+  #     cc <- colorCol(),
+  #     nsi <- nSentencesI(),
+  #     asi <- activeSentencesI(),
+  #     sdi <- surveyDataI(),
+  #     cci <- colorColI()
+  #   )
+  # })
+  
+  # ## onBookmark function with all the various reactives
+  # onBookmark(function(state) {
+  #   # PTS
+  #   state$values$lrcs <- leftRV$chosenSentences
+  #   state$values$lrcr <- leftRV$chosenRatings
+  #   state$values$rran <- rightRV$ageNAs
+  #   state$values$rrab <- rightRV$ageButtons
+  #   state$values$rras <- rightRV$ageSlider
+  #   state$values$rrrn <- rightRV$raceNAs
+  #   state$values$rrr <- rightRV$race
+  #   state$values$rrgn <- rightRV$genderNAs
+  #   state$values$rrg <- rightRV$gender
+  #   state$values$rren <- rightRV$educationNAs
+  #   state$values$rre <- rightRV$education
+  #   state$values$ns <- rvo$ns
+  #   state$values$as <- rvo$as
+  #   state$values$sd <- rvo$sd
+  #   state$values$cc <- rvo$cc
+  # 
+  #   # INT
+  #   state$values$lrics <- leftRVI$chosenSentences
+  #   state$values$nsi <- rvo$nsi
+  #   state$values$asi <- rvo$asi
+  #   state$values$sdi <- rvo$sdi
+  #   state$values$cci <- rvo$cci
+  # })
+  
+  # ## onRestore function with all the various reactives
+  # onRestore(function(state) {
+  #   # PTS
+  #   leftRV$chosenSentences <- state$values$lrcs
+  #   leftRV$chosenRatings <- state$values$lrcr
+  #   rightRV$ageNAs <- state$values$rran
+  #   rightRV$ageButtons <- state$values$rrab
+  #   rightRV$ageSlider <- state$values$rras
+  #   rightRV$raceNAs <- state$values$rrrn
+  #   rightRV$race <- state$values$rrr
+  #   rightRV$genderNAs <- state$values$rrgn
+  #   rightRV$gender <- state$values$rrg
+  #   rightRV$educationNAs <- state$values$rren
+  #   rightRV$education <- state$values$rre
+  # 
+  #   # INT
+  #   leftRVI$chosenSentences <- state$values$lrics
+  # })
   
   # Update body tabs --------------------------------------------------------
   ## Here's where the hidden vs. non-hidden tabs thing explicitly comes into play.
@@ -1451,4 +1515,7 @@ server <- function(input, output, session){
 
 
 # Run the app
-shinyApp(ui, server, enableBookmarking = "url") # enable URL bookmarking 
+shinyApp(ui, 
+         server, 
+         #enableBookmarking = "url" # XXX commented out bc bookmarking isn't working. See github issue 33.
+)
