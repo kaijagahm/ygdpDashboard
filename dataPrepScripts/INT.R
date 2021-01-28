@@ -134,7 +134,10 @@ hexIDW <- function(sentenceData,
   # Interpolate and predict
   cat("interpolating...")
   rating_idw <- predict(rating_gs, hexNodes) %>%
-    st_transform(2163)
+    st_transform(2163) %>%
+    mutate(predRating.pred = case_when(predRating.pred > 5 ~ 5,
+                                       predRating.pred < 1 ~ 1,
+                                       TRUE ~ predRating.pred))
   
   # Join to polygons
   predPoly <- st_join(hexPolygons, rating_idw) %>%
@@ -167,9 +170,6 @@ interpListSmall <- lapply(sentencesList,
 if(!nrow(interpListLarge[[1]] != nrow(hexes30[[1]]))|!nrow(interpListMedium[[1]] != nrow(hexes50[[1]]))|!nrow(interpListSmall[[1]] != nrow(hexes75[[1]]))){
   stop("Number of hexes does not match the number in the input grid for at least one of the interpLists.")
 }
-
-
-# XXX Next steps: run the rest of the script. Recreate the surveysentencestable or whatever it's called, and see about including information for survey 6 and 7 in it to fix the bug in the app.
 
 # 5. Save the interpolation lists -----------------------------------------
 save(interpListLarge, file = here("data", "interpolations", "interpListLarge.Rda"))
