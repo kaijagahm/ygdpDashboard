@@ -295,6 +295,15 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                               options = list(`actions-box` = TRUE), 
                                                               multiple = T)
                                                 ),
+                                                div( # urban/rural widget
+                                                  h5("Urban/rural:"),
+                                                  checkboxInput("urbanRuralNAs", includeNAsText, value = T),
+                                                  pickerInput("urbanRural", label = NULL, 
+                                                              choices = urbanRuralLevels, 
+                                                              selected = urbanRuralLevels, 
+                                                              options = list(`actions-box` = TRUE), 
+                                                              multiple = T)
+                                                ),
                                                 # The divs here put the buttons next to each other
                                                 div(style = "display:inline-block", 
                                                     actionButton("pointFiltersReset", "Reset",
@@ -413,6 +422,8 @@ server <- function(input, output, session){
   #   state$values$rrg <- rightRV$gender
   #   state$values$rren <- rightRV$educationNAs
   #   state$values$rre <- rightRV$education
+  #   state$values$rrurn <- rightRV$urbanRuralNAs
+  #   state$values$rrur <- rightRV$urbanRural
   #   state$values$ns <- rvo$ns
   #   state$values$as <- rvo$as
   #   state$values$sd <- rvo$sd
@@ -440,6 +451,8 @@ server <- function(input, output, session){
   #   rightRV$gender <- state$values$rrg
   #   rightRV$educationNAs <- state$values$rren
   #   rightRV$education <- state$values$rre
+  #   rightRV$urbanRuralNAs <- state$values$rrurn
+  #   rightRV$urbanRural <- state$values$rrur
   # 
   #   # INT
   #   leftRVI$chosenSentences <- state$values$lrics
@@ -594,7 +607,9 @@ server <- function(input, output, session){
                             genderNAs = T,
                             gender = genderLevels,
                             educationNAs = T,
-                            education = educationLevels)
+                            education = educationLevels,
+                            urbanRuralNAs = T,
+                            urbanRural = urbanRuralLevels)
   
   ## values in rightRV are updated when the "apply" button is clicked in the right sidebar.
   observeEvent(input$pointFiltersApply, {
@@ -615,6 +630,8 @@ server <- function(input, output, session){
     rightRV$gender <- input$gender
     rightRV$educationNAs <- input$educationNAs
     rightRV$education <- input$education
+    rightRV$urbanRuralNAs <- input$urbanRuralNAs
+    rightRV$urbanRural <- input$urbanRural
   }, 
   ignoreInit = T, # we don't need to run this observer on load because we already define default values of rightRV above.
   label = "oeUpdateFilters") 
@@ -655,12 +672,14 @@ server <- function(input, output, session){
       filter(is.na(gender) | gender %in% rightRV$gender) %>%
       filter(is.na(raceCats) | raceCats %in% rightRV$race) %>%
       filter(is.na(education) | education %in% rightRV$education) %>%
+      filter(is.na(urbanRural) | urbanRural %in% rightRV$urbanRural) %>%
       
       # Remove NA's if the checkboxes are unchecked
       {if(rightRV$ageNAs == F) filter(., !is.na(age)) else .} %>% # since ageBin is derived from age, don't need a separate test here for which age filter tab is selected--all rows that are NA for age will also be NA for ageBin.
       {if(rightRV$genderNAs == F) filter(., !is.na(gender)) else .} %>%
       {if(rightRV$raceNAs == F) filter(., !is.na(raceCats)) else .} %>%
-      {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .}
+      {if(rightRV$educationNAs == F) filter(., !is.na(education)) else .} %>%
+      {if(rightRV$urbanRuralNAs == F) filter(., !is.na(urbanRural)) else .}
   },
   label = "rDat")
   
@@ -963,6 +982,10 @@ server <- function(input, output, session){
     ## Reset education filters
     updatePickerInput(session, "education", selected = educationLevels)
     updateCheckboxInput(session, "educationNAs", value = TRUE)
+    
+    ## Reset urbanRural filters
+    updatePickerInput(session, "urbanRural", selected = urbanRuralLevels)
+    updateCheckboxInput(session, "urbanRuralNAs", value = TRUE)
     
     ## Message for console (for debugging/understanding)
     print("Demographic filters have been reset. Click 'Apply' again to propagate changes.")
