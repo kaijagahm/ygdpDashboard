@@ -56,13 +56,6 @@ formatButtons <- function(name, baseString = base, colors = color_palette){
   return(formats)
 }
 
-leftSidebarScroll <- tags$style( # css code to make the left sidebar scroll.
-  "#sidebarItemExpanded {
-            overflow: auto;
-            max-height: 100vh;
-        }"
-)
-
 # Rating choices ----------------------------------------------------------
 ratingChoiceNames <- c("1", "2", "3", "4", "5")
 ratingChoiceValues <- 1:5
@@ -254,4 +247,7 @@ addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
 checkboxText <- "Show points that don't meet selected criteria"
 
 
+# Point sizes -------------------------------------------------------------
+coloredPointSize <- 6
+blackPointSize <- 2
 
