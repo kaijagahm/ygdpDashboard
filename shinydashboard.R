@@ -93,7 +93,12 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # LEFT SIDEBAR ------------------------------------------------------------
     sidebar = dashboardSidebar(
-      leftSidebarScroll, # CSS to make the sidebar scroll. See dashboardFunctions.R
+      tags$style( # css code to make the left sidebar scroll.
+        "#sidebarItemExpanded {
+            overflow: auto;
+            max-height: 90vh;
+        }"
+      ),
       width = 250,
       sidebarMenu(
         id = "leftSidebar", # name of the left sidebar
@@ -179,6 +184,13 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # BODY --------------------------------------------------------------------
     body = dashboardBody(
+      id = "body",
+      tags$style( 
+        "#body {
+            overflow: auto;
+            max-height: 90vh;
+        }"
+      ),
       # Keep right sidebar open by removing the icon to close it
       # Code from: https://stackoverflow.com/questions/63837262/is-it-possible-to-fix-the-left-and-right-sidebars-in-shinydashboardplus-to-perma/
       tags$script(HTML( 
@@ -197,13 +209,13 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
       tabItems(
         # (PTS)
         tabItem(tabName = "hiddenPointMaps",
-                leafletOutput("pointMap", height = "525px"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
+                leafletOutput("pointMap", height = "475px"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
                 br(),
                 uiOutput("pointMapResetZoom") # button to reset map zoom
         ),
         # (INT)
         tabItem(tabName = "hiddenInterpolationMaps",
-                leafletOutput("interpolationMap", height = "525px"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
+                leafletOutput("interpolationMap", height = "475px"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
                 br(),
                 uiOutput("interpolationMapResetZoom") # button to reset map zoom
         ),
@@ -237,6 +249,14 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # RIGHT SIDEBAR -----------------------------------------------------------
     rightsidebar = rightSidebar(
+      id = "rightSidebar", # need this id for the custom css for scrolling.
+      ## css for scrolling:
+      tags$style( 
+        "#rightSidebar {
+            overflow: auto;
+            max-height: 90vh;
+        }"
+      ),
       background = "dark", # to match body style
       title = "Right Sidebar",
       # Tabset for the right sidebar: switch between PTS/INT
@@ -768,7 +788,7 @@ server <- function(input, output, session){
                          fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                          weight = 0.5, # width of the point border
-                         radius = 8, # size of the points
+                         radius = coloredPointSize, # size of the points
                          opacity = 1, # opacity of the point border
                          fillOpacity = 0.8) %>% # opacity of the point fill
         # Add circle markers for the points that *don't* meet the criteria.
@@ -778,7 +798,7 @@ server <- function(input, output, session){
                          fillColor = "black",
                          color = "black",
                          weight = 0.5,
-                         radius = 2, # make the black points really small
+                         radius = blackPointSize, # make the black points really small
                          opacity = 1,
                          fillOpacity = 1,
                          # We define a "group" for these points in order to take advantage of the built-in leaflet legend functionality.
@@ -793,7 +813,7 @@ server <- function(input, output, session){
                          fillColor = "black",
                          color = "black",
                          weight = 0.5, # width of the border
-                         radius = 2, opacity = 1,
+                         radius = blackPointSize, opacity = 1,
                          fillOpacity = 1,
                          group = checkboxText) # defined in dashboardFunctions.R
     }
@@ -846,7 +866,7 @@ server <- function(input, output, session){
                            fillColor = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                            color = ~continuousBlueYellow(eval(as.symbol(colorCol()))),
                            weight = 0.5,
-                           radius = 8,
+                           radius = coloredPointSize,
                            opacity = 1,
                            fillOpacity = 0.8) %>%
           addCircleMarkers(data = tad(), 
@@ -855,7 +875,7 @@ server <- function(input, output, session){
                            fillColor = "black",
                            color = "black",
                            weight = 0.5,
-                           radius = 2, opacity = 1,
+                           radius = blackPointSize, opacity = 1,
                            fillOpacity = 1,
                            group = checkboxText # defined in dashboardFunctions.R
           )
@@ -868,7 +888,7 @@ server <- function(input, output, session){
                            fillColor = "black",
                            color = "black",
                            weight = 0.5,
-                           radius = 2, opacity = 1,
+                           radius = blackPointSize, opacity = 1,
                            fillOpacity = 1,
                            group = checkboxText # defined in dashboardFunctions.R
           )
