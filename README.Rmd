@@ -1,17 +1,18 @@
 ---
-title: "YGDP Dashboard README"
 output: 
-  html_document: 
-    toc: yes
-    keep_md: yes
+  github_document: 
+    keep_html: yes
 ---
+
+# README: ygdpDashboard
+### Kaija Gahm
+### 1/28/2021
+**Last updated: `r Sys.Date()`**
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(fs)
 ```
-
-# YGDP Dashboard
 
 README file for the YGDP Dashboard, developed in R Shiny.
 
@@ -76,6 +77,19 @@ fs::dir_tree(recurse = 1)
 6.  In addition to the required \`label\` argument in inputs, which provides a unique identifier for that input, I have included the optional \`label\` argument in my \`reactiveValues\`, \`reactiveVal\`, \`reactive\`, \`observe\`, and \`observeEvent\` objects. This is primarily useful for visualizing the app's reactivity in the Shiny reactlog (<https://rstudio.github.io/reactlog/).> It also makes it easier to refer to parts of the code by name, e.g. in Github issues.
 
 7.  There are some places in the app where I took hacky shortcuts that made things work but that might trip you up if you try to modify seemingly-basic things about the app. I apologize in advance! I was learning this as I went. I've marked places that I think fall into this category with \# AAA.
+
+### How to add new data to the app
+To update the data used by the app, use the two data preparation scripts, stored in the "dataPrepScripts/" folder. As you can probably guess, "PTS.R" prepares the data for the "points" mode in the app, and "INT.R" prepares the data for the "interpolation" mode in the app (see point 1 in "Code notes" above). 
+
+Each of these scripts pulls in data from the "ygdpDB.db" file, which is stored in a different project folder: "ygdpDB/database/currentDB/" (see the README documents in the "database/" folder for more information on the file structure over there). The scripts process the data and put it into a format that's usable by the app. The data output files are then stored here in the dashboard folder, under "data/" (in the respective subfolders for PTS and INT).
+
+Finally, the "shinydashboard.R" script reads in the data files from "data/" and uses them to create the app.
+
+If you've added additional data to the database, using the workflow outlined in the instructional document in "ygdpDB/database/", then you will need to re-run the scripts in this pipeline in order to deploy a newly updated version of the app. 
+
+Here is a diagram that illustrates the pipeline I just described above. *Disclaimer:* this diagram does not include every file and every relationship between files. I'm just trying to give a general illustration of how the data gets analyzed by different scripts, and in what order. I hope it's helpful.
+
+![](dashboardDataPipeline.svg)
 
 #### Acknowledgements
 
