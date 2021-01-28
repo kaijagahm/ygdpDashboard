@@ -162,10 +162,10 @@ point 1 in “Code notes” above).
 Each of these scripts pulls in data from the “ygdpDB.db” file, which is
 stored in a different project folder: “ygdpDB/database/currentDB/” (see
 the README documents in the “database/” folder for more information on
-the file structure over there). The scripts process the data and put it
-into a format that’s usable by the app. The data output files are then
-stored here in the dashboard folder, under “data/” (in the respective
-subfolders for PTS and INT).
+the file structure over there)[1]. The scripts process the data and put
+it into a format that’s usable by the app. The data output files are
+then stored here in the dashboard folder, under “data/” (in the
+respective subfolders for PTS and INT).
 
 Finally, the “shinydashboard.R” script reads in the data files from
 “data/” and uses them to create the app.
@@ -190,3 +190,7 @@ from Ian Neidel. Additional help from Jake Riley, Asmae Toumi, and
 Jonathan Trattner via the [R4ds Slack
 channel](https://www.rfordatasci.com/), as well as @nirgrahamuk and
 @ismirsehregal via [RStudio Community](https://community.rstudio.com/).
+
+[1] Note: if you’re reading this on Github, you may or may not be
+authorized to make these changes to the app. The ygdpDB repo is private,
+and only authorized YGDP people can access it
