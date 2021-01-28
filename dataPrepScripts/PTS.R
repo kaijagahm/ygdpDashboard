@@ -18,7 +18,7 @@ named_group_split <- function(.tbl, ...) {
 }
 
 # Connect to the database
-con <- dbConnect(RSQLite::SQLite(), file.path("..", "R", "database", "currentDB", "ygdpDB.db"))
+con <- dbConnect(RSQLite::SQLite(), file.path("..", "ygdpDB", "database", "currentDB", "ygdpDB.db"))
 
 ## test out survey 7
 rs7 <- tbl(con, "responses") %>%
@@ -45,6 +45,35 @@ r <- tbl(con, "ratings") %>%
   filter(countryID == "USA") %>% # only people raised in the USA
   select(-countryID) %>%
   collect() # retrieve the data
+
+# Join urban/rural designations
+## get urban/rural data
+ur <- tbl(con, "census_urban_areas") %>%
+  select(cityID, UATYP10) %>%
+  distinct() %>%
+  collect()
+
+## make sure there aren't any duplicates
+ur %>%
+  group_by(cityID) %>%
+  filter(n() > 1) # 0 rows, good.
+length(unique(ur$cityID)) == nrow(ur) # TRUE, good.
+
+## Bind to `r`
+nrow(r)
+r <- r %>%
+  left_join(ur,
+            by = c("raisedCityID" = "cityID"))
+nrow(r) # row count is the same.
+
+## Edit the categories
+r <- r %>%
+  rename("urbanRural" = UATYP10) %>%
+  mutate(urbanRural = forcats::fct_recode(urbanRural,
+                                          "urban" = "U",
+                                          "urban cluster" = "C"),
+         urbanRural = case_when(is.na(urbanRural) ~ "rural",
+                                TRUE ~ as.character(urbanRural)))
 
 # test s7
 r %>%
@@ -242,7 +271,7 @@ test <- test %>%
 addLabel <- function(list){
   newList <- lapply(list, function(x){
     x %>%
-      mutate(label = paste0("<b>Gender: </b> ", gender, " <br> <b>Age group: </b> ", ageBin, " <br> <b>Edu. level: </b> ", education, " <br> <b>Race: </b> ", raceCats))
+      mutate(label = paste0("<b>Gender: </b> ", gender, " <br> <b>Age group: </b> ", ageBin, " <br> <b>Edu. level: </b> ", education, " <br> <b>Race: </b> ", raceCats, " <br> <b>Urban/rural: </b> ", urbanRural))
   })
   return(newList)
 }
