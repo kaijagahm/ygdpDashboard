@@ -181,26 +181,26 @@ load(here("data", "interpolations", "interpListMedium.Rda"))
 load(here("data", "interpolations", "interpListSmall.Rda"))
  
 # test it out by plotting
-interpListSmall[[1]] %>% 
-  ggplot() + 
-  geom_sf(aes(fill = pred, col = pred))+
-  scale_fill_viridis()+
-  scale_color_viridis()+
-  ggtitle(names(interpListSmall)[1])
-
-interpListMedium[[1]] %>% 
-  ggplot() + 
-  geom_sf(aes(fill = pred, col = pred))+
-  scale_fill_viridis()+
-  scale_color_viridis()+
-  ggtitle(names(interpListMedium)[1])
-
-interpListLarge[[1]] %>% 
-  ggplot() + 
-  geom_sf(aes(fill = pred, col = pred))+
-  scale_fill_viridis()+
-  scale_color_viridis()+
-  ggtitle(names(interpListLarge)[1])
+# interpListSmall[[1]] %>% 
+#   ggplot() + 
+#   geom_sf(aes(fill = pred, col = pred))+
+#   scale_fill_viridis()+
+#   scale_color_viridis()+
+#   ggtitle(names(interpListSmall)[1])
+# 
+# interpListMedium[[1]] %>% 
+#   ggplot() + 
+#   geom_sf(aes(fill = pred, col = pred))+
+#   scale_fill_viridis()+
+#   scale_color_viridis()+
+#   ggtitle(names(interpListMedium)[1])
+# 
+# interpListLarge[[1]] %>% 
+#   ggplot() + 
+#   geom_sf(aes(fill = pred, col = pred))+
+#   scale_fill_viridis()+
+#   scale_color_viridis()+
+#   ggtitle(names(interpListLarge)[1])
 
 
 # make interp data frames -------------------------------------------------
