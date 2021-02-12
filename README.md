@@ -5,9 +5,11 @@
 
 ### 1/28/2021
 
-**Last updated: 2021-01-28**
+**Last updated: 2021-02-12**
 
 README file for the YGDP Dashboard, developed in R Shiny.
+
+Currently, the app is deployed to both https://kaijagahm.shinyapps.io/ygdpDashboard/ and https://ygdp.shinyapps.io/ygdpDashboard/. Going forward, it will be maintained at the latter and may be removed from the former.
 
 ### Files in this repo
 
