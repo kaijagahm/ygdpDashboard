@@ -209,13 +209,17 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
       tabItems(
         # (PTS)
         tabItem(tabName = "hiddenPointMaps",
-                leafletOutput("pointMap", height = "475px"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
+                tags$style(type = "text/css", 
+                           "#pointMap {height: calc(100vh - 165px) !important;}"),
+                leafletOutput("pointMap"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
                 br(),
                 uiOutput("pointMapResetZoom") # button to reset map zoom
         ),
         # (INT)
         tabItem(tabName = "hiddenInterpolationMaps",
-                leafletOutput("interpolationMap", height = "475px"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
+                tags$style(type = "text/css", 
+                           "#interpolationMap {height: calc(100vh - 165px) !important;}"),
+                leafletOutput("interpolationMap"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
                 br(),
                 uiOutput("interpolationMapResetZoom") # button to reset map zoom
         ),
@@ -249,12 +253,11 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # RIGHT SIDEBAR -----------------------------------------------------------
     rightsidebar = rightSidebar(
-      id = "rightSidebar", # need this id for the custom css for scrolling.
-      ## css for scrolling:
-      tags$style( 
+      id = "rightSidebar",
+      tags$style( # Ian's scroll solution
         "#rightSidebar {
-            overflow: auto;
-            max-height: 90vh;
+            overflow: scroll;
+            height: calc(100vh - 50px); 
         }"
       ),
       background = "dark", # to match body style
@@ -1047,6 +1050,9 @@ server <- function(input, output, session){
   
   # (PTS) Update color criteria choices -------------------------------------------
   observeEvent(input$sentencesApply|input$sentencesReset, {
+    # if(nSentences() > 2){
+    #   browser()
+    # }
     print(paste0("Before updating input$colorCriteriaPoints: ", input$colorCriteriaPoints))
     val <- input$colorCriteriaPoints # this is the value that *was* selected before the update goes through
     choices1 <- c("Sentence 1 ratings", "Selected criteria") # these are the choices that are available for 1 sentence
@@ -1057,6 +1063,7 @@ server <- function(input, output, session){
                         # set `selected` to the previously-selected value *only* if that value is contained in the available choices now.
                         selected = ifelse(val %in% choices1, val, "Sentence 1 ratings"))
     }else{
+      # browser()
       updateSelectInput(session, "colorCriteriaPoints",
                         choices = c(paste0("Sentence ", activeSentences(), " ratings"),
                                     "Mean rating",
