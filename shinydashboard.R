@@ -96,9 +96,9 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
       tags$style( # css code to make the left sidebar scroll.
         "#sidebarItemExpanded {
             overflow: auto;
-            max-height: 90vh;
+            max-height: calc(100vh - 50px);
         }"
-      ),
+      ), # change to left sidebar scroll height to eliminate dead space
       width = 250,
       sidebarMenu(
         id = "leftSidebar", # name of the left sidebar
@@ -188,9 +188,9 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
       tags$style( 
         "#body {
             overflow: auto;
-            max-height: 90vh;
+            height: calc(100vh - 50px);
         }"
-      ),
+      ), # Change to body scroll to eliminate dead space
       # Keep right sidebar open by removing the icon to close it
       # Code from: https://stackoverflow.com/questions/63837262/is-it-possible-to-fix-the-left-and-right-sidebars-in-shinydashboardplus-to-perma/
       tags$script(HTML( 
@@ -209,20 +209,18 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
       tabItems(
         # (PTS)
         tabItem(tabName = "hiddenPointMaps",
-                tags$style(type = "text/css", 
-                           "#pointMap {height: calc(100vh - 165px) !important;}"),
+                tags$style(type = "text/css", "#pointMap {height: calc(100vh - 135px) !important;}"), #sets map height to max without scroll bars
                 leafletOutput("pointMap"), # the actual map! Generated in server as `output$pointMap` with `renderLeaflet()`
                 br(),
                 uiOutput("pointMapResetZoom") # button to reset map zoom
         ),
         # (INT)
         tabItem(tabName = "hiddenInterpolationMaps",
-                tags$style(type = "text/css", 
-                           "#interpolationMap {height: calc(100vh - 165px) !important;}"),
+                tags$style(type = "text/css", "#interpolationMap {height: calc(100vh - 135px) !important;}"), #sets map height to max without scroll bars
                 leafletOutput("interpolationMap"), # the interp map! Generated in server as `output$interpolationMap` with `renderLeaflet()`
                 br(),
                 uiOutput("interpolationMapResetZoom") # button to reset map zoom
-        ),
+        ), #**change
         # (HT)
         tabItem(tabName = "hiddenHowTo",
                 br(),
