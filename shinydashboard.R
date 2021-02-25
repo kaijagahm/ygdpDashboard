@@ -248,15 +248,14 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     # RIGHT SIDEBAR -----------------------------------------------------------
     controlbar = dashboardControlbar(
       id = "rightSidebar",
-      disable = FALSE,
-      # tags$style( # Ian's scroll solution
-      #   "#rightSidebar {
-      #       overflow: scroll;
-      #       height: calc(100vh - 50px); 
-      #   }"
-      # ),
-      background = "dark", # to match body style
-      title = "Right Sidebar",
+      collapsed = FALSE,
+      tags$style( # Ian's scroll solution
+        "#rightSidebar {
+            overflow: auto;
+            height: 100vh;
+        }"
+      ),
+      skin = "dark", # to match body style
       # Tabset for the right sidebar: switch between PTS/INT
       tabsetPanel(id = "rightSidebarTabset",
                   type = "hidden", # Switch programmatically; hide tabs
