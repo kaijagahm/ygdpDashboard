@@ -240,13 +240,13 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     controlbar = dashboardControlbar(
       id = "rightSidebar",
       collapsed = F,
+      disable = F,
       tags$style( # Ian's scroll solution
         "#rightSidebar {
             overflow: auto;
             height: 100vh;
         }"
       ),
-      tags$style("#control-sidebar-open {display:none;}"),
       width = 250,
       # Tabset for the right sidebar: switch between PTS/INT
       tabsetPanel(id = "rightSidebarTabset",
@@ -361,7 +361,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                        tabPanel(
                                          title = "Credits",
                                          br(),
-                                         p("This app was created by Kaija Gahm for the YGDP in Fall 2020, with help from Ian Niedel."),
+                                         p("This app was created by Kaija Gahm for the YGDP in Fall 2020, with help from Ian Neidel."),
                                          hr(), # lines to separate sections
                                          a(href = "https://github.com/kaijagahm/ygdpDashboard", 
                                            "App source code"), # hyperlink
