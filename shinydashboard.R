@@ -398,8 +398,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                            )
                   )
       )
-    ),
-    footer = dashboardFooter(left = "test", right = "test")
+    )
   )
 } # end of UI function (again, only enclosed this in a function to make URL bookmarking work)
 
