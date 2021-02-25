@@ -67,16 +67,6 @@ source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
 # UI function -------------------------------------------------------------
 ui <- function(request){ # Defined this as a function so that URL bookmarking would work. It still doesn't. Alas. See issue #33.
   dashboardPage(
-    # tags$head(
-    #   tags$style(
-    #     # Removes dark space at the top of the right sidebar
-    #     # code from https://stackoverflow.com/questions/59289622/remove-the-dark-space-at-the-top-of-the-right-sidebar-in-a-shinydashboardplus
-    #     HTML( 
-    #       ".control-sidebar-tabs {display:none;}"
-    #     )
-    #   )
-    # ),
-    # useShinyjs(), # enables use of javascript in the code.
     # HEADER ------------------------------------------------------------------
     header = dashboardHeader(
       title = "YGDP Data Explorer",
@@ -95,6 +85,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
             max-height: calc(100vh - 50px);
         }"
       ), # change to left sidebar scroll height to eliminate dead space
+      useShinyjs(), # enables use of javascript in the code.
       width = 250,
       sidebarMenu(
         id = "leftSidebar", # name of the left sidebar
@@ -248,14 +239,15 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     # RIGHT SIDEBAR -----------------------------------------------------------
     controlbar = dashboardControlbar(
       id = "rightSidebar",
-      collapsed = FALSE,
+      collapsed = F,
       tags$style( # Ian's scroll solution
         "#rightSidebar {
             overflow: auto;
             height: 100vh;
         }"
       ),
-      skin = "dark", # to match body style
+      tags$style("#control-sidebar-open {display:none;}"),
+      width = 250,
       # Tabset for the right sidebar: switch between PTS/INT
       tabsetPanel(id = "rightSidebarTabset",
                   type = "hidden", # Switch programmatically; hide tabs
@@ -1552,9 +1544,6 @@ server <- function(input, output, session){
     })
   },
   label = "oeUpdateSentenceChoicesI")
-  
-  # Keep the right sidebar open all the time.
-  shinyjs::addClass(selector = "body", class = "control-sidebar-open")
 }
 
 
