@@ -66,28 +66,24 @@ source("howToAboutContent.R") # text and images for the 'how to use' tab (HT)
 
 # UI function -------------------------------------------------------------
 ui <- function(request){ # Defined this as a function so that URL bookmarking would work. It still doesn't. Alas. See issue #33.
-  tagList(dashboardPagePlus(
-    tags$head(
-      tags$style(
-        # Removes dark space at the top of the right sidebar
-        # code from https://stackoverflow.com/questions/59289622/remove-the-dark-space-at-the-top-of-the-right-sidebar-in-a-shinydashboardplus
-        HTML( 
-          ".control-sidebar-tabs {display:none;}"
-        )
-      )
-    ),
-    
-    useShinyjs(), # enables use of javascript in the code.
-    
-    
+  dashboardPage(
+    # tags$head(
+    #   tags$style(
+    #     # Removes dark space at the top of the right sidebar
+    #     # code from https://stackoverflow.com/questions/59289622/remove-the-dark-space-at-the-top-of-the-right-sidebar-in-a-shinydashboardplus
+    #     HTML( 
+    #       ".control-sidebar-tabs {display:none;}"
+    #     )
+    #   )
+    # ),
+    # useShinyjs(), # enables use of javascript in the code.
     # HEADER ------------------------------------------------------------------
-    header = dashboardHeaderPlus(
+    header = dashboardHeader(
       title = "YGDP Data Explorer",
       #XXX commented out bookmark button because bookmarking isn't working. See github issue 33 for more details.
       # tags$li(class = "dropdown", 
       #         bookmarkButton(label = "Bookmark app state")),
-      enable_rightsidebar = TRUE,
-      rightSidebarIcon = "sliders"
+      controlbarIcon = icon("sliders")
     ),
     
     
@@ -250,14 +246,15 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     
     # RIGHT SIDEBAR -----------------------------------------------------------
-    rightsidebar = rightSidebar(
+    controlbar = dashboardControlbar(
       id = "rightSidebar",
-      tags$style( # Ian's scroll solution
-        "#rightSidebar {
-            overflow: scroll;
-            height: calc(100vh - 50px); 
-        }"
-      ),
+      disable = FALSE,
+      # tags$style( # Ian's scroll solution
+      #   "#rightSidebar {
+      #       overflow: scroll;
+      #       height: calc(100vh - 50px); 
+      #   }"
+      # ),
       background = "dark", # to match body style
       title = "Right Sidebar",
       # Tabset for the right sidebar: switch between PTS/INT
@@ -401,9 +398,8 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                            )
                   )
       )
-    )
-  )
-  
+    ),
+    footer = dashboardFooter(left = "test", right = "test")
   )
 } # end of UI function (again, only enclosed this in a function to make URL bookmarking work)
 
