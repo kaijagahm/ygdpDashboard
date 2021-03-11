@@ -119,7 +119,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  ### Sentence selector
                  div(id = "sentence1controls", div(style = reduceSpacing,
                                                    selectizeInput("sentence1", "Sentence 1:",
-                                                                  choices = names(snl[[1]]),
+                                                                  getSentenceChoices(snl[[1]]),
                                                                   selected = defaultSentence1, 
                                                                   multiple = F)),
                      prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
@@ -140,15 +140,12 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  # Title
                  h4("Select sentences"),
                  # Inputs
-                 div(style = reduceSpacing,
-                     selectInput("surveyI", "Survey", 
-                                 choices = str_replace(names(snl), "^S", ""),
-                                 selected = str_replace(names(snl), "^S", "")[1],
-                                 multiple = FALSE)),
                  ### Sentence selector
                  div(id = "sentence1controlsI", div(style = reduceSpacing,
                                                     selectizeInput("sentence1I", "Sentence 1:",
-                                                                   choices = names(snl[[1]]),
+                                                                   choices = getSentenceChoicesI(
+                                                                     inputList = interpListMedium,
+                                                                     surveySentencesTable = surveySentencesTable),
                                                                    selected = defaultSentence1, 
                                                                    multiple = F)),
                      br(),
@@ -180,7 +177,6 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
         
       )
     ),
-    
     
     # BODY --------------------------------------------------------------------
     body = dashboardBody(
@@ -1117,35 +1113,6 @@ server <- function(input, output, session){
   },
   label = "rChosenSentencesI") 
   
-  # (INT) Survey data -------------------------------------------------------------
-  # Varies based on which survey is selected
-  ## Real data, to be fed into reactive expression `datI`.
-  
-  # list of sentence hexes [such that] the names of the sentences match up to the chosen survey, according to the surveySentencesTable (our survey-sentence reference table). 
-  # Note that this is somewhat different from how we generated the survey data in PTS mode, because the PTS list is a nested list (surveys > sentences) while the INT list is flat (sentences). So for INT, we use this step to choose only the sentences that appear in the chosen survey.
-  ## Define initial survey data:
-  surveyDataI <- reactiveVal(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[
-    surveySentencesTable$surveyID == paste0("S", str_replace(names(snl), "^S", "")[1])]
-  ],
-  label = "rvSurveyDataI") 
-  
-  
-  ## Update to new survey data if input$surveyI has changed
-  observeEvent(input$sentencesApplyI, { # When you click the "apply" button
-    name <- paste0("S", input$surveyI)
-    surveyDataI(interpListMedium[names(interpListMedium) %in% surveySentencesTable$sentenceText[surveySentencesTable$surveyID == name]]) # update to new survey data
-  }, 
-  ignoreInit = T,
-  label = "oeUpdateSurveyDataI")
-  
-  ## Dummy data for sentence selector options
-  surveySentencesDataListI <- reactive({ # this is basically a replicate of surveyDataI(), except that `datI` doesn't depend on it. surveySentencesDataListI is *only* used to generate choices to populate the sentence selectors. 
-    interpListMedium[names(interpListMedium) %in%
-                       surveySentencesTable$sentenceText[surveySentencesTable$surveyID == 
-                                                           paste0("S", input$surveyI)]]
-  },
-  label = "rSurveySentencesDataListI")
-  
   # (INT) leftRVI ------------------------------------------------------------------
   # ReactiveValues object that stores selections from the left sidebar (i.e. selected sentences)
   ## Initial values:
@@ -1163,7 +1130,7 @@ server <- function(input, output, session){
   # (INT) Data --------------------------------------------------------------
   # This is where we create the datI data frame, from a list of sentence interpolation predictions. We also add calculated statistics.
   datI <- reactive({
-    surveyDataI()[leftRVI$chosenSentences] %>% # select predictions for the chosen sentences
+    interpListMedium[leftRVI$chosenSentences] %>%
       bind_cols() %>% # bind them from a list into a data frame
       setNames(paste0("sentence", 1:ncol(.), ".pred")) %>% # rename the columns from sentence-specific names to generic sentence-number names
       
@@ -1241,7 +1208,9 @@ server <- function(input, output, session){
     
     # Some if-else logic, written by Ian. Create a new object colorcolilocal that gets around the problem with updateSelectInput for the color criteria choices. colorcolilocal will be used in place of colorColI() in the rest of this observer. 
     colorcolilocal = colorColI() # create a new version of colorColI(), to be used in this observer.
-    if (((colorcolilocal == "diff21") | (colorcolilocal == "diff12")) & (nSentencesI() != 2)){ # if color diff
+    if (((colorcolilocal == "diff21") | 
+         (colorcolilocal == "diff12")) & 
+        (nSentencesI() != 2)){ # if color diff
       colorcolilocal = "sentence1.pred"
     }else if ((colorcolilocal == "rgbColor") & (nSentencesI() != 3)){
       colorcolilocal = "sentence1.pred"
@@ -1407,8 +1376,7 @@ server <- function(input, output, session){
                     where = "afterEnd",
                     # addSentenceUII is defined in dashboardFunctions.R
                     ui = addSentenceUII(id = last(activeSentencesI()) + 1, 
-                                        inputList = surveySentencesDataListI(), 
-                                        surveyIDString = paste0("S", input$surveyI),
+                                        inputList = interpListMedium,
                                         surveySentencesTable = surveySentencesTable)) # make a sentence UI with the new number
     
     # update activeSentencesI
@@ -1530,34 +1498,6 @@ server <- function(input, output, session){
     print(paste0("After updating colorColI(): ", colorColI()))
   },
   label = "oeUpdateColorColI")
-  
-  # (INT) Update sentence choices -------------------------------------------------
-  # This observer listens to surveySentencesDataListI(), not surveyDataI(), since the latter is only updated when you click "Apply".
-  observeEvent(surveySentencesDataListI(), { 
-    # Update choices for sentence 1
-    updateSelectizeInput(session,
-                         "sentence1I",
-                         label = "Sentence 1:",
-                         choices = getSentenceChoicesI(surveySentencesDataListI(), 
-                                                       paste0("S", input$surveyI), 
-                                                       surveySentencesTable),
-                         selected = getSentenceChoicesI(surveySentencesDataListI(), 
-                                                        paste0("S", input$surveyI), 
-                                                        surveySentencesTable)[[1]][[1]])
-    
-    # Update choices for all other sentences
-    lapply(activeSentencesI(), function(x){
-      updateSelectizeInput(session,
-                           paste0("sentence", x, "I"),
-                           choices = getSentenceChoicesI(surveySentencesDataListI(), 
-                                                         paste0("S", input$surveyI), 
-                                                         surveySentencesTable),
-                           selected = getSentenceChoicesI(surveySentencesDataListI(), 
-                                                          paste0("S", input$surveyI), 
-                                                          surveySentencesTable)[[1]][[1]])
-    })
-  },
-  label = "oeUpdateSentenceChoicesI")
   
   # Keep the right sidebar open all the time.
   shinyjs::addClass(selector = "body", class = "control-sidebar-open")
