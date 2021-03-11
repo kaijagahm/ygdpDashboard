@@ -145,7 +145,6 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                  choices = str_replace(names(snl), "^S", ""),
                                  selected = str_replace(names(snl), "^S", "")[1],
                                  multiple = FALSE)),
-                 #test change
                  ### Sentence selector
                  div(id = "sentence1controlsI", div(style = reduceSpacing,
                                                     selectizeInput("sentence1I", "Sentence 1:",
