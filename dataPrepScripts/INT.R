@@ -64,7 +64,7 @@ named_group_split <- function(.tbl, ...) {
 }
 
 # Connect to the database -------------------------------------------------
-con <- dbConnect(RSQLite::SQLite(), "../R/database/currentDB/ygdpDB.db")
+con <- dbConnect(RSQLite::SQLite(), "../ygdpDB/database/currentDB/ygdpDB.db")
 
 # Load continental US outline ---------------------------------------------
 a <- st_read(here("data", "interpolations", "USNation20m")) %>%
@@ -78,7 +78,6 @@ outlineContUS <- a %>%
 hexes30 <- makeHexes(outlineContUS, nHex = 30)
 hexes50 <- makeHexes(outlineContUS, nHex = 50)
 hexes75 <- makeHexes(outlineContUS, nHex = 75)
-
 
 # 2.5 Check geometry types ------------------------------------------------
 if(!(st_geometry_type(hexes30[[1]]) %>% unique() == "POINT")|!(st_geometry_type(hexes50[[1]]) %>% unique() == "POINT")|!(st_geometry_type(hexes75[[1]]) %>% unique() == "POINT")){
@@ -101,9 +100,11 @@ r <- tbl(con, "ratings") %>%
   st_transform(2163)
 
 ## split into a list where each element is the data for one sentence
-s <- dbReadTable(con, "sentences") %>% select(sentenceID, sentenceText)
+s <- dbReadTable(con, "sentences") %>% select(sentenceID, sentenceText, constructionID)
 sentencesList <- r %>%
   left_join(s, by =  "sentenceID") %>%
+  # Remove any control sentences
+  filter(!(constructionID %in% c("CG", "CU"))) %>%
   mutate(sentenceText = str_replace_all(sentenceText, "’", "'")) %>% # replace any smart quotes/apostrophes with straight ones.
   group_by(sentenceText) %>%
   named_group_split(., sentenceText)
