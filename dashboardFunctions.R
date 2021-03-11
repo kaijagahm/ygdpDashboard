@@ -103,11 +103,24 @@ getSentenceChoices <- function(inputList){ # function to get a list of sentence 
   return(a)
 }
 
-getSentenceChoicesI <- function(inputList, surveyIDString, surveySentencesTable){
+# getSentenceChoicesI <- function(inputList, surveyIDString, surveySentencesTable){
+#   sentences <- names(inputList)
+#   a <- surveySentencesTable %>%
+#     filter(sentenceText %in% sentences, 
+#            surveyID == surveyIDString) %>%
+#     select(constructionName, sentenceText) %>%
+#     distinct() %>%
+#     group_by(constructionName) %>%
+#     named_group_split(constructionName) %>%
+#     lapply(., function(x) x %>% pull(sentenceText)) %>%
+#     lapply(., as.list)
+#   return(a)
+# }
+
+getSentenceChoicesI <- function(inputList, surveySentencesTable){
   sentences <- names(inputList)
   a <- surveySentencesTable %>%
-    filter(sentenceText %in% sentences, 
-           surveyID == surveyIDString) %>%
+    filter(sentenceText %in% sentences) %>%
     select(constructionName, sentenceText) %>%
     distinct() %>%
     group_by(constructionName) %>%
@@ -225,16 +238,16 @@ addSentenceUI <- function(id, dat){
 
 # addSentenceUII ----------------------------------------------------------
 # Function to add the dynamic UI components for a new sentence in interpolation mode
-addSentenceUII <- function(id, inputList, surveyIDString, surveySentencesTable){
+addSentenceUII <- function(id, inputList, surveySentencesTable){
   div(id = paste0("sentence", id, "Controls", "I"),
       div(style = reduceSpacing,
           selectizeInput(inputId = paste0("sentence", id, "I"),
                          label = paste0("Sentence ", id, ":"),
                          choices = getSentenceChoicesI(inputList,
-                                                       surveyIDString,
+                                                       #surveyIDString,
                                                        surveySentencesTable),
                          selected = getSentenceChoicesI(inputList, 
-                                                        surveyIDString,
+                                                        #surveyIDString,
                                                         surveySentencesTable)[[1]][[1]],
                          multiple = F)),
       br(),
