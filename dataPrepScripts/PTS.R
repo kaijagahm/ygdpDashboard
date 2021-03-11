@@ -181,8 +181,6 @@ r <- r %>% # replace "NA" with <NA>
 r <- r %>%
   filter(!(constructionID %in% c("CG", "CU")))
 
-
-
 # Fix education levels ----------------------------------------------------
 table(r$education, exclude = NULL) # these need to be standardized
 r <- r %>%
