@@ -187,13 +187,13 @@ r <- r %>%
 table(r$education, exclude = NULL) # these need to be standardized
 r <- r %>%
   mutate(education = forcats::fct_recode(education,
-                                "associate" = "associate",
-                                "associate" = "associates", 
-                                "bachelor's" = "bachelor's",
-                                "graduate" = "graduate",
-                                "high school diploma" = "high school diploma",
-                                "some college" = "some college",
-                                "some high school" = "some high school"))
+                                         "associate" = "associate",
+                                         "associate" = "associates", 
+                                         "bachelor's" = "bachelor's",
+                                         "graduate" = "graduate",
+                                         "high school diploma" = "high school diploma",
+                                         "some college" = "some college",
+                                         "some high school" = "some high school"))
 
 
 # Jitter lat/long ---------------------------------------------------------
