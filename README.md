@@ -5,11 +5,9 @@
 
 ### 1/28/2021
 
-**Last updated: 2021-02-12**
+**Last updated: 2021-03-12**
 
 README file for the YGDP Dashboard, developed in R Shiny.
-
-Currently, the app is deployed to both https://kaijagahm.shinyapps.io/ygdpDashboard/ and https://ygdp.shinyapps.io/ygdpDashboard/. Going forward, it will be maintained at the latter and may be removed from the former.
 
 ### Files in this repo
 
@@ -22,19 +20,22 @@ the subdirectories.
     ## ├── README.Rmd
     ## ├── README.html
     ## ├── README.md
-    ## ├── README.pdf
     ## ├── dashboardDataPipeline.svg
     ## ├── dashboardFunctions.R
     ## ├── data
     ## │   ├── howTo
     ## │   ├── interpolations
-    ## │   └── points
+    ## │   ├── points
+    ## │   └── ygdpDB.db
     ## ├── dataPrepScripts
     ## │   ├── INT.R
     ## │   └── PTS.R
     ## ├── howToAboutContent.R
-    ## ├── rsconnect
-    ## │   └── documents
+    ## ├── renv
+    ## │   ├── activate.R
+    ## │   ├── library
+    ## │   └── settings.dcf
+    ## ├── renv.lock
     ## ├── shinydashboard.R
     ## ├── sketches
     ## │   ├── Dashboard sketch - Page 1.pdf
@@ -51,23 +52,23 @@ the subdirectories.
 
 -   **data**/: directory containing the data that is used in the app.
 
-    -   **howTo/**: labeled images, which are used in the “How to use”
-        app section.
+-   **howTo/**: labeled images, which are used in the “How to use” app
+    section.
 
-    -   **interpolations/**: data (hex rasters) used in the app’s
-        “Interpolation” mode.
+-   **interpolations/**: data (hex rasters) used in the app’s
+    “Interpolation” mode.
 
-    -   **points/**: data (sentence ratings and demographic
-        characteristics) used in the app’s “Points” mode.
+-   **points/**: data (sentence ratings and demographic characteristics)
+    used in the app’s “Points” mode.
 
 -   **dataPrepScripts/**: scripts used to generate the data contained in
     “data/interpolations/” and “data/points”
 
-    -   **INT.R**: script to generate hex rasters, contained in
-        “data/interpolations/”.
+-   **INT.R**: script to generate hex rasters, contained in
+    “data/interpolations/”.
 
-    -   **PTS.R**: script to pull data from the database for points mode
-        and clean it up. Results are stored in “data/points/”.
+-   **PTS.R**: script to pull data from the database for points mode and
+    clean it up. Results are stored in “data/points/”.
 
 -   **howToAboutContent.R**: static content for the “How to use” and
     “About” sections of the app. This script is sourced in
@@ -85,14 +86,42 @@ the subdirectories.
     file paths won’t work and your app won’t run! For more information
     about this, see the README in the top-level directory, “kaijaFiles”.
 
+### `renv` for managing package versions
+
+[`renv`](https://rstudio.github.io/renv/articles/renv.html) is an R
+package that manages **dependencies** (other R packages that are used by
+the code in the project). `renv` is useful for projects when they depend
+on functions from external packages that might change when those
+packages get updated.
+
+Normally, when you use `install.packages()` to install an R package, the
+package gets installed onto your computer into folder called “library/”.
+But that means you might run into trouble if you’re working on one
+project that relies on, say, version 3.4.0 of a package, but then you
+have another project that will break unless you use an older version of
+that same package, version 3.3.0. It’s hard to have two versions of the
+same package installed at the same time.
+
+So, the “renv/” folder is a substitute for your computer’s “library/”
+folder. When a project is using `renv`, the packages get installed into
+the “renv/” folder. This means that the project is *portable*! When you
+use the project on your computer through GitHub, you will automatically
+be using the right package versions, instead of having to update (or
+roll backward!) the package versions on your computer.
+
+You won’t have to interact with the “renv/” folder very much. If you
+install or update packages, you can save the new state of the repository
+by running `renv::snapshot()`. If you want to roll things back, you can
+use `renv::restore()`. For more details on using `renv`, see the guide
+[here](https://rstudio.github.io/renv/articles/renv.html).
+
 ### How to use this repo
 
 1.  Make sure you have R and RStudio installed. For more information,
     see the README in “kaijaFiles”.
 
 2.  If you’re reading this on GitHub and don’t yet have this
-    repository/folder downloaded, download it using the green “Code”
-    button. Otherwise, proceed to step 3.
+    repository/folder downloaded, clone it into a new R project.
 
 3.  Open the .Rproj file, “ygdpDashboard.Rproj”.
 
@@ -174,7 +203,8 @@ Finally, the “shinydashboard.R” script reads in the data files from
 
 If you’ve added additional data to the database, using the workflow
 outlined in the instructional document in “ygdpDB/database/”, then you
-will need to re-run the scripts in this pipeline in order to deploy a
+will need to copy the new version of the ygdpDB.db database over to this
+project and re-run the scripts in this pipeline in order to deploy a
 newly updated version of the app.
 
 Here is a diagram that illustrates the pipeline I just described above.
