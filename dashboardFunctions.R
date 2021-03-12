@@ -176,19 +176,19 @@ continuous44Legend <- colorNumeric(
 )
 
 redLegend <- colorNumeric(
-  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(255, 0, 0, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(130, 0, 0, maxColorValue = 255), rgb(130,130,130, maxColorValue = 255))),
   domain = 1:5,
   na.color = "#ffffff00"
 )
 
 greenLegend <- colorNumeric(
-  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 255, 0, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 130, 0, maxColorValue = 255), rgb(130,130,130, maxColorValue = 255))),
   domain = 1:5,
   na.color = "#ffffff00"
 )
 
 blueLegend <- colorNumeric(
-  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 0, 255, maxColorValue = 255), rgb(255,255,255, maxColorValue = 255))),
+  palette = rev(c(rgb(0,0,0, maxColorValue = 255), rgb(0, 0, 130, maxColorValue = 255), rgb(130,130,130, maxColorValue = 255))),
   domain = 1:5,
   na.color = "#ffffff00"
 )

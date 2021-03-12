@@ -1153,10 +1153,10 @@ server <- function(input, output, session){
                                max = max(c_across(contains("sentence")), na.rm = T),
                                med = median(c_across(contains("sentence")), na.rm = T),
                                mn = mean(c_across(contains("sentence")), na.rm = T),
-                               r = (sentence1.pred/5)*255, # we divide by 255 because that's the maximum value for rgb. We divide by 5 because we need to convert a 1-5 scale into a 0-255 scale, so we're interested in proportions.
-                               g = (sentence2.pred/5)*255, 
-                               b = (sentence3.pred/5)*255,
-                               rgbColor = rgb(r, g, b, maxColorValue = 255)
+                               r = (sentence1.pred/5)*130, # we divide by 130 because that's the maximum value we're allowing for rgb. We divide by 5 because we need to convert a 1-5 scale into a 0-130 scale, so we're interested in proportions.
+                               g = (sentence2.pred/5)*130, 
+                               b = (sentence3.pred/5)*130,
+                               rgbColor = rgb(r, g, b, maxColorValue = 255) # leave this as 255 bc we only want to go partway up the color scale.
       )
         else .} %>%
       
