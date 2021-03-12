@@ -82,7 +82,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # HEADER ------------------------------------------------------------------
     header = dashboardHeaderPlus(
-      title = "YGDP Data Explorer",
+      title = "TEST TITLE",
       #XXX commented out bookmark button because bookmarking isn't working. See github issue 33 for more details.
       # tags$li(class = "dropdown", 
       #         bookmarkButton(label = "Bookmark app state")),
