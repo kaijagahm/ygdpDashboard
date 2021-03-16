@@ -103,20 +103,6 @@ getSentenceChoices <- function(inputList){ # function to get a list of sentence 
   return(a)
 }
 
-# getSentenceChoicesI <- function(inputList, surveyIDString, surveySentencesTable){
-#   sentences <- names(inputList)
-#   a <- surveySentencesTable %>%
-#     filter(sentenceText %in% sentences, 
-#            surveyID == surveyIDString) %>%
-#     select(constructionName, sentenceText) %>%
-#     distinct() %>%
-#     group_by(constructionName) %>%
-#     named_group_split(constructionName) %>%
-#     lapply(., function(x) x %>% pull(sentenceText)) %>%
-#     lapply(., as.list)
-#   return(a)
-# }
-
 getSentenceChoicesI <- function(inputList, surveySentencesTable){
   sentences <- names(inputList)
   a <- surveySentencesTable %>%
