@@ -1,5 +1,6 @@
 
 # README: ygdpDashboard
+This is a README file for the YGDP Data Explorer app.
 
 ### Kaija Gahm
 
