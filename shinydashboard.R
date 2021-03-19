@@ -114,8 +114,8 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  # Inputs
                  div(style = reduceSpacing,
                      selectInput("survey", "Survey", 
-                                 choices = str_replace(names(snl), "^S", ""),
-                                 selected = str_replace(names(snl), "^S", "")[1],
+                                 choices = names(snl),
+                                 selected = names(snl)[1],
                                  multiple = FALSE)),
                  ### Sentence selector
                  div(id = "sentence1controls", div(style = reduceSpacing,
@@ -972,7 +972,7 @@ server <- function(input, output, session){
     
     # Reset survey selection to default
     updateSelectInput(session, "survey",
-                      selected = str_replace(names(snl), "^S", "")[1])
+                      selected = names(snl)[1])
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1",
@@ -1408,7 +1408,7 @@ server <- function(input, output, session){
     
     # Reset survey selection
     updateSelectInput(session, "surveyI",
-                      selected = str_replace(names(snl), "^S", "")[1]) # reset to default
+                      selected = names(snl)[1]) # reset to default
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1I",

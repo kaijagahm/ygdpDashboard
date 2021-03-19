@@ -231,16 +231,16 @@ head(r)
 r <- r %>%
   mutate(sentenceText = str_replace_all(sentenceText, "’", "'"))
 
-# # Rename the surveys by date ----------------------------------------------
-# surveyDates <- tbl(con, "surveys") %>% select(surveyID, dateReleased) %>% 
-#   collect() %>% 
-#   mutate(dateReleased = lubridate::date(dateReleased)) %>%
-#   distinct()
-# 
-# r <- r %>%
-#   left_join(surveyDates, by = "surveyID") %>%
-#   mutate(surveyID = paste0(dateReleased, " (", surveyID, ")") %>% str_replace("S", "Survey ")) %>%
-#   select(-dateReleased)
+# Rename the surveys by date ----------------------------------------------
+surveyDates <- tbl(con, "surveys") %>% select(surveyID, dateReleased) %>%
+  collect() %>%
+  mutate(dateReleased = lubridate::date(dateReleased)) %>%
+  distinct()
+
+r <- r %>%
+  left_join(surveyDates, by = "surveyID") %>%
+  mutate(surveyID = paste0(dateReleased, " (", surveyID, ")") %>% str_replace("S", "Survey ")) %>%
+  select(-dateReleased)
 
 # Split into list by surveys ----------------------------------------------
 surveysList <- r %>%
