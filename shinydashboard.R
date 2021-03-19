@@ -132,8 +132,8 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                      br()
                  ), # end of div "sentence1controls"
                  actionButton("addSentence", "+ Add a sentence"), # button to add the second sentence
-                 div(style="display:inline-block", actionButton("sentencesReset", "Reset all", style = "background-color: #4AA8F7")),
-                 div(style="display:inline-block", actionButton("sentencesApply", "Apply", style = "background-color: #A8F74A"))
+                 div(style="display:inline-block", actionButton("sentencesReset", "Reset all", style = "background-color: rgb(129,178,234)")),
+                 div(style="display:inline-block", actionButton("sentencesApply", "Apply", style = "background-color: rgb(192,234,129)"))
         ),
         hidden(menuItem("hiddenPointMaps", tabName = "hiddenPointMaps")),
         
@@ -163,9 +163,9 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  ), # end of div "sentence1controlsI"
                  actionButton("addSentenceI", "+ Add a sentence"), # button to add the second sentence
                  div(style = "display:inline-block", actionButton("sentencesResetI", "Reset all", 
-                                                                  style = "background-color: #4AA8F7")),
+                                                                  style = "background-color: rgb(129,178,234)")),
                  div(style = "display:inline-block", actionButton("sentencesApplyI", "Apply", 
-                                                                  style = "background-color: #A8F74A"))
+                                                                  style = "background-color: rgb(192,234,129)"))
         ),
         hidden(menuItem("hiddenInterpolationMaps", tabName = "hiddenInterpolationMaps")),
         
@@ -190,6 +190,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     # BODY --------------------------------------------------------------------
     body = dashboardBody(
       id = "body",
+      customTheme, # set custom theme for the dashboard, defined in dashboardFunctions.R
       tags$style( 
         "#body {
             overflow: auto;
@@ -203,10 +204,10 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
          document.getElementsByClassName("sidebar-toggle")[0].style.visibility = "hidden";'
       )),
       
-      # Define the theme for the dashboard
-      shinyDashboardThemes(
-        theme = "grey_dark"
-      ),
+      # # Define the theme for the dashboard
+      # shinyDashboardThemes(
+      #   theme = "grey_light"
+      # ),
       
       # Body tabs ---------------------------------------------------------------
       # A different body tab (i.e. different content) is shown depending on which menu item is selected in the left sidebar
@@ -263,7 +264,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
             height: calc(100vh - 50px); 
         }"
       ),
-      background = "dark", # to match body style
+      background = "light", # to match body style
       title = "Right Sidebar",
       # Tabset for the right sidebar: switch between PTS/INT
       tabsetPanel(id = "rightSidebarTabset",
@@ -333,11 +334,11 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                 # The divs here put the buttons next to each other
                                                 div(style = "display:inline-block", 
                                                     actionButton("pointFiltersReset", "Reset",
-                                                                 style = "background-color: #4AA8F7")
+                                                                 style = "background-color: rgb(129,178,234)")
                                                 ),
                                                 div(style = "display:inline-block",
                                                     actionButton("pointFiltersApply", "Apply",
-                                                                 style = "background-color: #A8F74A")
+                                                                 style = "background-color: rgb(192,234,129)")
                                                 )
                                        ),
                                        tabPanel(title = "Display settings",
@@ -348,7 +349,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                             multiple = F),
                                                 div(style = "display:inline-block",
                                                     actionButton("pointDisplaySettingsApply", "Apply",
-                                                                 style = "background-color: #A8F74A")))
+                                                                 style = "background-color: rgb(192,234,129)")))
                            )
                   ),
                   # (INT)
@@ -366,7 +367,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                      multiple = F),
                                          div(style = "display:inline-block",
                                              actionButton("interpolationDisplaySettingsApply", "Apply",
-                                                          style = "background-color: #A8F74A"))
+                                                          style = "background-color: rgb(192,234,129)"))
                                        )
                            )
                   ),
@@ -930,7 +931,7 @@ server <- function(input, output, session){
   output$pointMapResetZoom <- renderUI({
     div(style = "display:inline-block", # I guess we don't really need this part? Just keeping it to be consistent with the places where we have an apply and a reset button next to each other.
         actionButton("resetPointMapZoom", "Reset map zoom", 
-                     style = "background-color: #4AA8F7"))
+                     style = "background-color: rgb(129,178,234)"))
   })
   
   ## When reset button is clicked, reset the map zoom
@@ -1365,7 +1366,7 @@ server <- function(input, output, session){
   output$interpolationMapResetZoom <- renderUI({
     div(style="display:inline-block", 
         actionButton("resetInterpolationMapZoom", 
-                     "Reset map view", style = "background-color: #4AA8F7"))
+                     "Reset map view", style = "background-color: rgb(129,178,234)"))
   })
   
   ## When reset button is clicked, reset the map zoom
