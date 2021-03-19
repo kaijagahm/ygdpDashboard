@@ -18,7 +18,7 @@ named_group_split <- function(.tbl, ...) {
 }
 
 # Connect to the database
-con <- dbConnect(RSQLite::SQLite(), file.path("..", "ygdpDB", "database", "currentDB", "ygdpDB.db"))
+con <- dbConnect(RSQLite::SQLite(), here("data", "ygdpDB.db"))
 
 ## test out survey 7
 rs7 <- tbl(con, "responses") %>%
@@ -95,19 +95,19 @@ r <- r %>%
 
 ## Confirm that this went through
 r %>% filter(surveyID == "S5", sentenceID %in% c("1054", "1032")) %>% 
-  pull(sentenceID) %>% table() # yes, we only see 1032 here.
+  pull(sentenceID) %>% table() # yes, we only see 1054 here.
 
 # Add construction names -------------------------------------------------
 c <- dbReadTable(con, "constructions") %>%
   select(constructionID, constructionName)
 
-nrow(r) # 273402
+nrow(r) # 276162
 r <- r %>%
   left_join(c, by = "constructionID")
-nrow(r) # 273402, good (or should be same as previous.)
+nrow(r) # 276162, good (or should be same as previous.)
 
 # Remove people younger than 18 and create ageBins
-r <- r %>% ### ISSUE FOR GH
+r <- r %>%
   mutate(age = as.numeric(age)) %>%
   filter(age > 18 | is.na(age)) %>%
   mutate(ageBin = cut(age, breaks = c(17, 30, 40, 50, 60, 70),
@@ -115,33 +115,19 @@ r <- r %>% ### ISSUE FOR GH
 
 
 # Data checks -------------------------------------------------------------
-table(r$surveyID, exclude = NULL)
+table(r$surveyID, exclude = NULL) # now includes survey 13 data.
 table(r$sentenceID, exclude = NULL) # have to set the "NA"s to "1295" (see idw_hex_interpolation_2 and GH issue #46)
 r <- r %>%
   mutate(sentenceID = case_when(sentenceID == "NA" ~ "1295",
                                 TRUE ~ sentenceID))
-# table(r$rating, exclude = NULL) # oh dear.
-# r %>%
-#   filter(!(rating %in% c("1", "2", "3", "4", "5"))) %>%
-#   View() # Okay, I checked the raw data for some of these comma-separated ratings, and it looks like those are real. They exist in the raw data. What was going on?
-
-# Emailed Jim to ask what to do with the multiple ratings. For now, just going to convert to numeric and allow those to become NA's.
-# In Jim's response (2020-11-21), he confirms that converting to NA is the right thing to do.
-r <- r %>%
-  mutate(rating = as.numeric(rating))
-table(r$rating, exclude = NULL) # looks much more reasonable.
+table(r$rating, exclude = NULL) # ratings look good.
 
 # Remove any zeroes
 r <- r %>%
   filter(rating != 0 & !is.na(rating))
 
-table(r$sentenceText, exclude = NULL) # some of these are NA. See which ones--I suspect it's 1295.
-r %>%
-  filter(is.na(sentenceText)) # none, because we converted above.
-# what is the actual sentence text for 1295?
-txt <- tbl(con, "sentences") %>%
-  filter(sentenceID == "1295") %>%
-  pull(sentenceText)
+# Check for NA sentence text
+r %>% filter(is.na(sentenceText)|sentenceText == "NA") # no NA sentences
 
 # Remove all leading and trailing spaces from the sentenceText column, and replace smart quotes with straight ones.
 r <- r %>%
@@ -157,7 +143,6 @@ r %>%
   filter(constructionID == "check") %>%
   select(constructionID, sentenceID) %>%
   distinct() # no more problems!
-
 
 # Aggregate gender categories ---------------------------------------------
 table(r$gender, exclude = NULL) # going to aggregate these to female, male, and other
@@ -258,7 +243,7 @@ sentencesNestedList <- lapply(surveysList, function(x) x %>%
 
 snl <- sentencesNestedList %>% lapply(as.list) 
 
-lapply(snl, length) # looks reasonable (remember, we removed the control sentences)
+lapply(snl, length) %>% unlist() # looks reasonable (remember, we removed the control sentences)
 
 # Add the "label" column for leaflet map popups --------------------------
 test <- snl[[1]][[1]] %>% as.data.frame()
@@ -278,7 +263,7 @@ addLabel <- function(list){
 snl <- snl %>%
   lapply(., function(x) x %>% addLabel())
 
-head(snl[[1]][[1]]) # looks good!
+head(snl[[1]][[1]]) %>% as.data.frame() # looks good!
 
 # Save the data -----------------------------------------------------------
 save(snl, file = here("data", "points", "snl.Rda"))
