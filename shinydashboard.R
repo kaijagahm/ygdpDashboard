@@ -93,6 +93,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
     
     # LEFT SIDEBAR ------------------------------------------------------------
     sidebar = dashboardSidebar(
+      tags$script(HTML(onInitialize)), # initialize the sentence dropdown menus with expandable sections
       tags$style( # css code to make the left sidebar scroll.
         "#sidebarItemExpanded {
             overflow: auto;
@@ -109,7 +110,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  startExpanded = TRUE,
                  class = "active",
                  # Title
-                 h4("Select sentences"),
+                 h5("Select sentences"),
                  # Inputs
                  div(style = reduceSpacing,
                      selectInput("survey", "Survey", 
@@ -121,7 +122,11 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                    selectizeInput("sentence1", "Sentence 1:",
                                                                   getSentenceChoices(snl[[1]]),
                                                                   selected = defaultSentence1, 
-                                                                  multiple = F)),
+                                                                  multiple = F,
+                                                                  options = list(
+                                                                    onDropdownOpen = I(onDropdownOpen)
+                                                                  )
+                                                                  )),
                      prettyRatingSelector(sentenceNum = 1), # defined in dashboardFunctions.R
                      hr(),
                      br()
@@ -138,7 +143,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  icon = icon("map"),
                  startExpanded = FALSE,
                  # Title
-                 h4("Select sentences"),
+                 h5("Select sentences"),
                  # Inputs
                  ### Sentence selector
                  div(id = "sentence1controlsI", div(style = reduceSpacing,
@@ -147,7 +152,11 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                                                                      inputList = interpListMedium,
                                                                      surveySentencesTable = surveySentencesTable),
                                                                    selected = defaultSentence1, 
-                                                                   multiple = F)),
+                                                                   multiple = F,
+                                                                   options = list(
+                                                                     onDropdownOpen = I(onDropdownOpen)
+                                                                   )
+                                                    )),
                      br(),
                      hr(),
                      br()

@@ -209,7 +209,11 @@ addSentenceUI <- function(id, dat){
                          label = paste0("Sentence ", id, ":"),
                          choices = getSentenceChoices(dat),
                          selected = getSentenceChoices(dat)[[1]][[1]],
-                         multiple = F),
+                         multiple = F,
+                         options = list(
+                           onDropdownOpen = I(onDropdownOpen)
+                         )
+          ),
           prettyRatingSelector(sentenceNum = as.numeric(id))),
       #div(style = "display:inline-block",
       #    prettyJoinSelector(sentenceNum = as.numeric(id))), # opted not to include join
@@ -235,7 +239,11 @@ addSentenceUII <- function(id, inputList, surveySentencesTable){
                          selected = getSentenceChoicesI(inputList, 
                                                         #surveyIDString,
                                                         surveySentencesTable)[[1]][[1]],
-                         multiple = F)),
+                         multiple = F,
+                         options = list(
+                           onDropdownOpen = I(onDropdownOpen)
+                         )
+          )),
       br(),
       hr()
   )
@@ -250,5 +258,22 @@ checkboxText <- "Show points that don't meet selected criteria"
 coloredPointSize <- 6
 blackPointSize <- 2
 
-# newSection --------------------------------------------------------------
-testvec <- c(1:10)
+# selectInput dropdown collapse -------------------------------------------
+onInitialize <- '
+$(function() {
+  $("body").on("mousedown", ".selectize-dropdown-content", function(e){
+    e.preventDefault(); 
+    return false;
+  }); 
+  $("body").on("click", ".optgroup-header", function(){
+    $(this).siblings().toggle();
+  });
+});'
+
+onDropdownOpen <- '
+function(el){
+  setTimeout(function(){
+    $(el).find(".optgroup .option").hide();
+  }, 0);
+}'
+
