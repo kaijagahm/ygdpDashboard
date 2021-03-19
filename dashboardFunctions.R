@@ -5,10 +5,10 @@ library(tidyverse)
 library(shinyjs)
 library(shinyWidgets)
 library(shinydashboard)
+library(dashboardthemes) # for custom theming
 library(devtools)
-#install_version("shinydashboardPlus", version = "0.7.5", repos = "http://cran.us.r-project.org")
+library(sysfonts) # for fun new fonts
 library(shinydashboardPlus) # AAA This is a MAJOR problem: shinydashboardPlus version 2.0.0.9000 is a breaking version. A lot of changes will have to be made to the code. It's documented in detail here: https://rinterface.github.io/shinydashboardPlus/news/index.html. See also GH issue #38. I included a line of code above to install the older version of shinydashboardPlus (the version that comes before the breaking changes.)
-library(dashboardthemes)
 
 # Define a default sentence -----------------------------------------------
 defaultSentence1 <- "I'm after bein' up there for five hours." # AAA: if you put this line into shinydashboard.R, instead of in this script, even if you put it at the top, the app fails to load. I think it has something to do with the different lines running in a weird random order, because Shiny does that? My guess is that Shiny runs all library() and source() calls *first*, and then runs the rest of the code in an unpredictable order. So if you don't have defaultSentence1 defined in this script (which gets called with source()), then you get burned. But I could be wrong.
@@ -277,3 +277,107 @@ function(el){
   }, 0);
 }'
 
+
+# Custom theme ------------------------------------------------------------
+## This theme was created with the beta dashboardthemes theme designer, here: https://nik01010.shinyapps.io/dashboardThemeDesigner/
+## Note that the theme designer currently does not include themes for the right sidebar, so it's a bit off, style-wise. That could probably be corrected manually with a bunch of css, but I don't know how.
+customTheme <- shinyDashboardThemeDIY(
+  ### general
+  appFontFamily = "Arial"
+  ,appFontColor = "#2D2D2D"
+  ,primaryFontColor = "#0F0F0F"
+  ,infoFontColor = "#0F0F0F"
+  ,successFontColor = "#0F0F0F"
+  ,warningFontColor = "#0F0F0F"
+  ,dangerFontColor = "#0F0F0F"
+  ,bodyBackColor = "#FFFFFF"
+  
+  ### header
+  ,logoBackColor = "#00356B"
+  
+  ,headerButtonBackColor = "#00356B"
+  ,headerButtonIconColor = "#DCDCDC"
+  ,headerButtonBackColorHover = "#00356B"
+  ,headerButtonIconColorHover = "#949494"
+  
+  ,headerBackColor = "#00356B"
+  ,headerBoxShadowColor = ""
+  ,headerBoxShadowSize = "0px 0px 0px"
+  
+  ### sidebar
+  ,sidebarBackColor = "#F9FAFC"
+  ,sidebarPadding = "0"
+  
+  ,sidebarMenuBackColor = "transparent"
+  ,sidebarMenuPadding = "0"
+  ,sidebarMenuBorderRadius = 0
+  
+  ,sidebarShadowRadius = ""
+  ,sidebarShadowColor = "0px 0px 0px"
+  
+  ,sidebarUserTextColor = "#0F0F0F"
+  
+  ,sidebarSearchBackColor = "#F0F0F0"
+  ,sidebarSearchIconColor = "#646464"
+  ,sidebarSearchBorderColor = "#DCDCDC"
+  
+  ,sidebarTabTextColor = "#0F0F0F"
+  ,sidebarTabTextSize = "15"
+  ,sidebarTabBorderStyle = "none"
+  ,sidebarTabBorderColor = "none"
+  ,sidebarTabBorderWidth = "1"
+  
+  ,sidebarTabBackColorSelected = "#E6E6E6"
+  ,sidebarTabTextColorSelected = "#0F0F0F"
+  ,sidebarTabRadiusSelected = "0px"
+  
+  ,sidebarTabBackColorHover = "#F5F5F5"
+  ,sidebarTabTextColorHover = "#0F0F0F"
+  ,sidebarTabBorderStyleHover = "none solid none none"
+  ,sidebarTabBorderColorHover = "#C8C8C8"
+  ,sidebarTabBorderWidthHover = "4"
+  ,sidebarTabRadiusHover = "0px"
+  
+  ### boxes
+  ,boxBackColor = "#FFFFFF"
+  ,boxBorderRadius = "5"
+  ,boxShadowSize = "none"
+  ,boxShadowColor = ""
+  ,boxTitleSize = "18"
+  ,boxDefaultColor = "#E1E1E1"
+  ,boxPrimaryColor = "#5F9BD5"
+  ,boxInfoColor = "#B4B4B4"
+  ,boxSuccessColor = "#70AD47"
+  ,boxWarningColor = "#ED7D31"
+  ,boxDangerColor = "#E84C22"
+  
+  ,tabBoxTabColor = "#F8F8F8"
+  ,tabBoxTabTextSize = "14"
+  ,tabBoxTabTextColor = "#646464"
+  ,tabBoxTabTextColorSelected = "#2D2D2D"
+  ,tabBoxBackColor = "#F8F8F8"
+  ,tabBoxHighlightColor = "#C8C8C8"
+  ,tabBoxBorderRadius = "5"
+  
+  ### inputs
+  ,buttonBackColor = "#DCDCDC"
+  ,buttonTextColor = "#0F0F0F"
+  ,buttonBorderColor = "#DCDCDC"
+  ,buttonBorderRadius = "5"
+  
+  ,buttonBackColorHover = "#B3B3B3"
+  ,buttonTextColorHover = "#0F0F0F"
+  ,buttonBorderColorHover = "#969696"
+  
+  ,textboxBackColor = "#FFFFFF"
+  ,textboxBorderColor = "#DCDCDC"
+  ,textboxBorderRadius = "5"
+  ,textboxBackColorSelect = "#F5F5F5"
+  ,textboxBorderColorSelect = "#6C6C6C"
+  
+  ### tables
+  ,tableBackColor = "#F8F8F8"
+  ,tableBorderColor = "#EEEEEE"
+  ,tableBorderTopSize = "1"
+  ,tableBorderRowSize = "1"
+)
