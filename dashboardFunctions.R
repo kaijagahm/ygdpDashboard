@@ -9,10 +9,10 @@ library(dashboardthemes) # for custom theming
 library(devtools)
 library(sysfonts) # for fun new fonts
 library(shinydashboardPlus) # AAA This is a MAJOR problem: shinydashboardPlus version 2.0.0.9000 is a breaking version. A lot of changes will have to be made to the code. It's documented in detail here: https://rinterface.github.io/shinydashboardPlus/news/index.html. See also GH issue #38. I included a line of code above to install the older version of shinydashboardPlus (the version that comes before the breaking changes.)
+load(here("data", "points", "snl.Rda"))
 
 # Define a default sentence -----------------------------------------------
-defaultSentence1 <- "I'm after bein' up there for five hours." # AAA: if you put this line into shinydashboard.R, instead of in this script, even if you put it at the top, the app fails to load. I think it has something to do with the different lines running in a weird random order, because Shiny does that? My guess is that Shiny runs all library() and source() calls *first*, and then runs the rest of the code in an unpredictable order. So if you don't have defaultSentence1 defined in this script (which gets called with source()), then you get burned. But I could be wrong.
-# AAA Another problem with doing things this way is that if another survey is added to the data and doesn't include this sentence, all the places where we have snl[[1]] for the survey data and then use defaultSentence1 as the initial sentence value won't work. Need to go in and make this more robust. See issue #39.
+defaultSentence1 <- names(snl[[1]])[1] # this still isn't quite working as the default sentence, for some reason. XXX START HERE.
 
 # Tab children function ---------------------------------------------------
 convertMenuItem <- function(mi,tabName) {
