@@ -1,12 +1,11 @@
 
 # README: ygdpDashboard
-This is a README file for the YGDP Data Explorer app.
 
 ### Kaija Gahm
 
 ### 1/28/2021
 
-**Last updated: 2021-03-12**
+**Last updated: 2021-04-05**
 
 README file for the YGDP Dashboard, developed in R Shiny.
 
@@ -32,11 +31,17 @@ the subdirectories.
     ## │   ├── INT.R
     ## │   └── PTS.R
     ## ├── howToAboutContent.R
+    ## ├── literature
+    ## │   ├── Gabmap_-_A_web_application_for_dialectology.pdf
+    ## │   ├── Leinonen et al 2016 Using gabmap (1).pdf
+    ## │   └── Measuring_Dialect_Pronunciation_Di_erenc.pdf
     ## ├── renv
     ## │   ├── activate.R
     ## │   ├── library
     ## │   └── settings.dcf
     ## ├── renv.lock
+    ## ├── rsconnect
+    ## │   └── documents
     ## ├── shinydashboard.R
     ## ├── sketches
     ## │   ├── Dashboard sketch - Page 1.pdf
@@ -46,7 +51,12 @@ the subdirectories.
 
 -   **README.Rmd:** used to generate README.pdf.
 
--   **README.pdf**: README document for this repo.
+-   **README.md** and **README.html**: README document for this repo; in
+    different but equivalent formats.
+
+-   **dashboardDataPipeline.svg:** graphic showing how the data moves
+    through the prep scripts to create the database. Used in the README
+    and in the tutorial video.
 
 -   **dashboardFunctions.R**: supporting functions called by
     shinydashboard.R, used to create the app.
@@ -77,6 +87,10 @@ the subdirectories.
     separate R script in order to reduce clutter in the main app script.
     This is the script to edit if you want to add or change the
     information presented in the “How to use” and “About” sections.
+
+-   **literature/**: some papers that describe analysis/viz methods
+    relevant to the RGB mode of the app. May be relevant for future app
+    development. See the RGB mode issue on GH.
 
 -   **sketches/**: preliminary dashboard sketches, which I used to
     design the final product.

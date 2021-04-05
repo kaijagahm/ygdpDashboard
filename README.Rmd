@@ -29,7 +29,9 @@ fs::dir_tree(recurse = 1)
 
 -   **README.Rmd:** used to generate README.pdf.
 
--   **README.pdf**: README document for this repo.
+-   **README.md** and **README.html**: README document for this repo; in different but equivalent formats.
+
+-   **dashboardDataPipeline.svg:** graphic showing how the data moves through the prep scripts to create the database. Used in the README and in the tutorial video.
 
 -   **dashboardFunctions.R**: supporting functions called by shinydashboard.R, used to create the app.
 
@@ -48,6 +50,8 @@ fs::dir_tree(recurse = 1)
 -   **PTS.R**: script to pull data from the database for points mode and clean it up. Results are stored in "data/points/".
 
 -   **howToAboutContent.R**: static content for the "How to use" and "About" sections of the app. This script is sourced in "shinydashboard.R". I've just chosen to write the content in a separate R script in order to reduce clutter in the main app script. This is the script to edit if you want to add or change the information presented in the "How to use" and "About" sections.
+
+-   **literature/**: some papers that describe analysis/viz methods relevant to the RGB mode of the app. May be relevant for future app development. See the RGB mode issue on GH.
 
 -   **sketches/**: preliminary dashboard sketches, which I used to design the final product.
 

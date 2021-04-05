@@ -28,7 +28,7 @@ body {
 <h1 id="readme-ygdpdashboard">README: ygdpDashboard</h1>
 <h3 id="kaija-gahm">Kaija Gahm</h3>
 <h3 id="1282021">1/28/2021</h3>
-<p><strong>Last updated: 2021-03-12</strong></p>
+<p><strong>Last updated: 2021-04-05</strong></p>
 <p>README file for the YGDP Dashboard, developed in R Shiny.</p>
 <h3 id="files-in-this-repo">Files in this repo</h3>
 <p>This is a “tree” representation of the subfolders in this directory. The <code>.</code> at the top represents the top level directory (folder), called “ygdpDashboard”. Note that this tree does not include all files in all the subdirectories.</p>
@@ -47,11 +47,17 @@ body {
 ## │   ├── INT.R
 ## │   └── PTS.R
 ## ├── howToAboutContent.R
+## ├── literature
+## │   ├── Gabmap_-_A_web_application_for_dialectology.pdf
+## │   ├── Leinonen et al 2016 Using gabmap (1).pdf
+## │   └── Measuring_Dialect_Pronunciation_Di_erenc.pdf
 ## ├── renv
 ## │   ├── activate.R
 ## │   ├── library
 ## │   └── settings.dcf
 ## ├── renv.lock
+## ├── rsconnect
+## │   └── documents
 ## ├── shinydashboard.R
 ## ├── sketches
 ## │   ├── Dashboard sketch - Page 1.pdf
@@ -60,7 +66,8 @@ body {
 ## └── ygdpDashboard.Rproj</code></pre>
 <ul>
 <li><p><strong>README.Rmd:</strong> used to generate README.pdf.</p></li>
-<li><p><strong>README.pdf</strong>: README document for this repo.</p></li>
+<li><p><strong>README.md</strong> and <strong>README.html</strong>: README document for this repo; in different but equivalent formats.</p></li>
+<li><p><strong>dashboardDataPipeline.svg:</strong> graphic showing how the data moves through the prep scripts to create the database. Used in the README and in the tutorial video.</p></li>
 <li><p><strong>dashboardFunctions.R</strong>: supporting functions called by shinydashboard.R, used to create the app.</p></li>
 <li><p><strong>data</strong>/: directory containing the data that is used in the app.</p></li>
 <li><p><strong>howTo/</strong>: labeled images, which are used in the “How to use” app section.</p></li>
@@ -70,6 +77,7 @@ body {
 <li><p><strong>INT.R</strong>: script to generate hex rasters, contained in “data/interpolations/”.</p></li>
 <li><p><strong>PTS.R</strong>: script to pull data from the database for points mode and clean it up. Results are stored in “data/points/”.</p></li>
 <li><p><strong>howToAboutContent.R</strong>: static content for the “How to use” and “About” sections of the app. This script is sourced in “shinydashboard.R”. I’ve just chosen to write the content in a separate R script in order to reduce clutter in the main app script. This is the script to edit if you want to add or change the information presented in the “How to use” and “About” sections.</p></li>
+<li><p><strong>literature/</strong>: some papers that describe analysis/viz methods relevant to the RGB mode of the app. May be relevant for future app development. See the RGB mode issue on GH.</p></li>
 <li><p><strong>sketches/</strong>: preliminary dashboard sketches, which I used to design the final product.</p></li>
 <li><p><strong>ygdpDashboard.Rproj</strong>: the .Rproj “portal” for accessing the R scripts in this directory. Open this first, and then use the “files” pane in RStudio to open other scripts. If you don’t do this, the file paths won’t work and your app won’t run! For more information about this, see the README in the top-level directory, “kaijaFiles”.</p></li>
 </ul>
