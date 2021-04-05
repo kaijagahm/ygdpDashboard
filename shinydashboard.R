@@ -596,8 +596,7 @@ server <- function(input, output, session){
   ## Real data, to be fed into reactive expression `dat`.
   surveyData <- reactiveVal(snl[[1]], label = "rvSurveyData") # initial survey data--start with first survey contained in snl.
   observeEvent(input$sentencesApply, { # When you click the "apply" button
-    name <- input$survey
-    surveyData(snl[[name]]) # update to new survey data
+    surveyData(snl[[input$survey]]) # update to new survey data
   }, 
   ignoreInit = T,
   label = "oeUpdateSurveyData")
