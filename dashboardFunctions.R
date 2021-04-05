@@ -310,7 +310,7 @@ customTheme <- shinyDashboardThemeDIY(
   
   ,sidebarMenuBackColor = "transparent"
   ,sidebarMenuPadding = "0"
-  ,sidebarMenuBorderRadius = 0
+  ,sidebarMenuBorderRadius = 10
   
   ,sidebarShadowRadius = ""
   ,sidebarShadowColor = "0px 0px 0px"
@@ -362,8 +362,8 @@ customTheme <- shinyDashboardThemeDIY(
   ### inputs
   ,buttonBackColor = "#DCDCDC"
   ,buttonTextColor = "#0F0F0F"
-  ,buttonBorderColor = "#DCDCDC"
-  ,buttonBorderRadius = "5"
+  ,buttonBorderColor = "#969696"
+  ,buttonBorderRadius = "10"
   
   ,buttonBackColorHover = "#B3B3B3"
   ,buttonTextColorHover = "#0F0F0F"
