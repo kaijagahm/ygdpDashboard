@@ -981,6 +981,13 @@
       "Repository": "CRAN",
       "Hash": "b227d13e29222b4574486cfcbde077fa"
     },
+    "sysfonts": {
+      "Package": "sysfonts",
+      "Version": "0.8.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6a750650ae5e5ba11b45cb5012bd6167"
+    },
     "testthat": {
       "Package": "testthat",
       "Version": "3.0.2",
