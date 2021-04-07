@@ -64,7 +64,7 @@ named_group_split <- function(.tbl, ...) {
 }
 
 # Connect to the database -------------------------------------------------
-con <- dbConnect(RSQLite::SQLite(), "../ygdpDB/database/currentDB/ygdpDB.db")
+con <- dbConnect(RSQLite::SQLite(), here("data", "ygdpDB.db"))
 
 # Load continental US outline ---------------------------------------------
 a <- st_read(here("data", "interpolations", "USNation20m")) %>%
@@ -105,7 +105,7 @@ sentencesList <- r %>%
   left_join(s, by =  "sentenceID") %>%
   # Remove any control sentences
   filter(!(constructionID %in% c("CG", "CU"))) %>%
-  mutate(sentenceText = str_replace_all(sentenceText, "’", "'")) %>% # replace any smart quotes/apostrophes with straight ones.
+  mutate(sentenceText = str_replace_all(sentenceText, "’|‘", "'")) %>% # replace any smart quotes/apostrophes with straight ones.
   group_by(sentenceText) %>%
   named_group_split(., sentenceText)
 names(sentencesList) # good!
@@ -238,7 +238,7 @@ save(interpDFSmall, file = here("data", "interpolations", "interpDFSmall.Rda"))
 
 # Survey sentences table --------------------------------------------------
 s <- dbReadTable(con, "sentences") %>%
-  mutate(sentenceText = str_replace_all(sentenceText, "’", "'"))
+  mutate(sentenceText = str_replace_all(sentenceText, "’|‘", "'"))
 
 ss <- dbReadTable(con, "survey_sentences")
 ss %>% pull(surveyID) %>% table()
