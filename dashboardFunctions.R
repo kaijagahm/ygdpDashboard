@@ -382,4 +382,4 @@ customTheme <- shinyDashboardThemeDIY(
 # Define a default sentence -----------------------------------------------
 # The default sentence needs to be the sentence that ends up being first *after* the list groupings are applied.
 defaultSentence1 <- getSentenceChoices(snl[[1]])[[1]] %>% 
-  unlist() # this still isn't quite working as the default sentence, for some reason. XXX START HERE.
+  unlist()
