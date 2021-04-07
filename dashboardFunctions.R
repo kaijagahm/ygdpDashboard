@@ -11,9 +11,6 @@ library(sysfonts) # for fun new fonts
 library(shinydashboardPlus) # AAA This is a MAJOR problem: shinydashboardPlus version 2.0.0.9000 is a breaking version. A lot of changes will have to be made to the code. It's documented in detail here: https://rinterface.github.io/shinydashboardPlus/news/index.html. See also GH issue #38. I included a line of code above to install the older version of shinydashboardPlus (the version that comes before the breaking changes.)
 load(here("data", "points", "snl.Rda"))
 
-# Define a default sentence -----------------------------------------------
-defaultSentence1 <- names(snl[[1]])[1] # this still isn't quite working as the default sentence, for some reason. XXX START HERE.
-
 # Tab children function ---------------------------------------------------
 convertMenuItem <- function(mi,tabName) {
   mi$children[[1]]$attribs['data-toggle']="tab"
@@ -381,3 +378,8 @@ customTheme <- shinyDashboardThemeDIY(
   ,tableBorderTopSize = "1"
   ,tableBorderRowSize = "1"
 )
+
+# Define a default sentence -----------------------------------------------
+# The default sentence needs to be the sentence that ends up being first *after* the list groupings are applied.
+defaultSentence1 <- getSentenceChoices(snl[[1]])[[1]] %>% 
+  unlist() # this still isn't quite working as the default sentence, for some reason. XXX START HERE.
