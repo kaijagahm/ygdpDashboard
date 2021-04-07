@@ -113,7 +113,6 @@ r <- r %>%
   mutate(ageBin = cut(age, breaks = c(17, 30, 40, 50, 60, 70),
                       labels = c("18-30", "31-40", "41-50", "51-60", ">61")))
 
-
 # Data checks -------------------------------------------------------------
 table(r$surveyID, exclude = NULL) # now includes survey 13 data.
 table(r$sentenceID, exclude = NULL) # have to set the "NA"s to "1295" (see idw_hex_interpolation_2 and GH issue #46)
