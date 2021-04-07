@@ -121,7 +121,7 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  div(id = "sentence1controls", div(style = reduceSpacing,
                                                    selectizeInput("sentence1", "Sentence 1:",
                                                                   getSentenceChoices(snl[[1]]),
-                                                                  selected = defaultSentence1, 
+                                                                  selected = defaultSentence1,
                                                                   multiple = F,
                                                                   options = list(
                                                                     onDropdownOpen = I(onDropdownOpen)
