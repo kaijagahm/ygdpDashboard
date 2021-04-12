@@ -74,18 +74,18 @@ prettyRatingSelector <- function(sentenceNum){
   return(prs)
 }
 
-
-# Create join selector ----------------------------------------------------
-prettyJoinSelector <- function(sentenceNum){
-  name <- paste0("joinType", sentenceNum)
-  pjs <- tagList(
-    radioGroupButtons(name, label = "How joined:",
-                      choices = c("AND", "OR"),
-                      selected = "AND",
-                      status = "info")
-  )
-  return(pjs)
-}
+# 
+# # Create join selector ----------------------------------------------------
+# prettyJoinSelector <- function(sentenceNum){
+#   name <- paste0("joinType", sentenceNum)
+#   pjs <- tagList(
+#     radioGroupButtons(name, label = "How joined:",
+#                       choices = c("AND", "OR"),
+#                       selected = "AND",
+#                       status = "info")
+#   )
+#   return(pjs)
+# }
 
 # Sentence choices --------------------------------------------------------
 # Sentence choices, in list
