@@ -71,7 +71,8 @@ r <- r %>%
   rename("urbanRural" = UATYP10) %>%
   mutate(urbanRural = forcats::fct_recode(urbanRural,
                                           "urban" = "U",
-                                          "urban cluster" = "C"),
+                                          "urban cluster" = "C",
+                                          "rural" = "R"),
          urbanRural = case_when(is.na(urbanRural) ~ "rural",
                                 TRUE ~ as.character(urbanRural)))
 
