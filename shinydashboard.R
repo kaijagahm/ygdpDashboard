@@ -114,14 +114,14 @@ ui <- function(request){ # Defined this as a function so that URL bookmarking wo
                  # Inputs
                  div(style = reduceSpacing,
                      selectInput("survey", "Survey", 
-                                 choices = str_replace(names(snl), "^S", ""),
-                                 selected = str_replace(names(snl), "^S", "")[1],
+                                 choices = names(snl),
+                                 selected = names(snl)[1],
                                  multiple = FALSE)),
                  ### Sentence selector
                  div(id = "sentence1controls", div(style = reduceSpacing,
                                                    selectizeInput("sentence1", "Sentence 1:",
                                                                   getSentenceChoices(snl[[1]]),
-                                                                  selected = defaultSentence1, 
+                                                                  selected = defaultSentence1,
                                                                   multiple = F,
                                                                   options = list(
                                                                     onDropdownOpen = I(onDropdownOpen)
@@ -421,6 +421,10 @@ server <- function(input, output, session){
   # XXX NOTE: I've commented all of this out because I couldn't get it to work. See github issue 33 for more details.
   #enableBookmarking(store = "url")
   
+  # observeEvent(input$sentencesApply, {
+  #   browser()
+  # })
+  
   # Create a reactiveValues object to store the reactiveVal objects and the reactive expressions
   #observe({
   #   rvo <- reactiveValues(
@@ -592,15 +596,14 @@ server <- function(input, output, session){
   ## Real data, to be fed into reactive expression `dat`.
   surveyData <- reactiveVal(snl[[1]], label = "rvSurveyData") # initial survey data--start with first survey contained in snl.
   observeEvent(input$sentencesApply, { # When you click the "apply" button
-    name <- paste0("S", input$survey)
-    surveyData(snl[[name]]) # update to new survey data
+    surveyData(snl[[input$survey]]) # update to new survey data
   }, 
   ignoreInit = T,
   label = "oeUpdateSurveyData")
   
   ## Dummy mirror of real data: for creating sentence selector options
   surveySentencesDataList <- reactive({ # this is basically a replicate of surveyData(), except that `dat` doesn't depend on it. surveySentencesDataList is *only* used to generate choices to populate the sentence selectors. 
-    snl[[paste0("S", input$survey)]]
+    snl[[input$survey]]
   },
   label = "rSurveySentencesDataList")
   
@@ -663,6 +666,9 @@ server <- function(input, output, session){
   ignoreInit = T, # we don't need to run this observer on load because we already define default values of rightRV above.
   label = "oeUpdateFilters") 
   
+  # observeEvent(input$sentencesApply, {
+  #   browser()
+  # })
   
   # (PTS) Data --------------------------------------------------------------
   ## Unlike the reactiveValues objects above, which only update when the observer runs, dat() is a reactive. It listens to: leftRV, rightRV, and surveyData().
@@ -760,12 +766,6 @@ server <- function(input, output, session){
       upgradeLabels(.) # format the labels nicely. Function defined in dashboardFunctions.R
   },
   label = "rWideDat")
-  
-  # This was just a useful debugging tool; not at all necessary to the actual app.
-  # observe({ # whenever dat() changes, print its dimensions.
-  #   print(paste0("Data dimensions: ", paste(dim(dat()), collapse = ", ")))
-  # },
-  # label = "oDimDat")
   
   # (PTS) Map ---------------------------------------------------------------
   # This initializes a basic map of the US, without any points on it.
@@ -972,7 +972,7 @@ server <- function(input, output, session){
     
     # Reset survey selection to default
     updateSelectInput(session, "survey",
-                      selected = str_replace(names(snl), "^S", "")[1])
+                      selected = names(snl)[1])
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1",
@@ -1408,7 +1408,7 @@ server <- function(input, output, session){
     
     # Reset survey selection
     updateSelectInput(session, "surveyI",
-                      selected = str_replace(names(snl), "^S", "")[1]) # reset to default
+                      selected = names(snl)[1]) # reset to default
     
     # Reset sentence 1 controls to defaults
     updateSelectizeInput(session, "sentence1I",
