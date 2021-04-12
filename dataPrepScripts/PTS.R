@@ -71,7 +71,8 @@ r <- r %>%
   rename("urbanRural" = UATYP10) %>%
   mutate(urbanRural = forcats::fct_recode(urbanRural,
                                           "urban" = "U",
-                                          "urban cluster" = "C"),
+                                          "urban cluster" = "C",
+                                          "rural" = "R"),
          urbanRural = case_when(is.na(urbanRural) ~ "rural",
                                 TRUE ~ as.character(urbanRural)))
 
@@ -112,7 +113,6 @@ r <- r %>%
   filter(age > 18 | is.na(age)) %>%
   mutate(ageBin = cut(age, breaks = c(17, 30, 40, 50, 60, 70),
                       labels = c("18-30", "31-40", "41-50", "51-60", ">61")))
-
 
 # Data checks -------------------------------------------------------------
 table(r$surveyID, exclude = NULL) # now includes survey 13 data.
@@ -231,16 +231,16 @@ head(r)
 r <- r %>%
   mutate(sentenceText = str_replace_all(sentenceText, "’", "'"))
 
-# # Rename the surveys by date ----------------------------------------------
-# surveyDates <- tbl(con, "surveys") %>% select(surveyID, dateReleased) %>% 
-#   collect() %>% 
-#   mutate(dateReleased = lubridate::date(dateReleased)) %>%
-#   distinct()
-# 
-# r <- r %>%
-#   left_join(surveyDates, by = "surveyID") %>%
-#   mutate(surveyID = paste0(dateReleased, " (", surveyID, ")") %>% str_replace("S", "Survey ")) %>%
-#   select(-dateReleased)
+# Rename the surveys by date ----------------------------------------------
+surveyDates <- tbl(con, "surveys") %>% select(surveyID, dateReleased) %>%
+  collect() %>%
+  mutate(dateReleased = lubridate::date(dateReleased)) %>%
+  distinct()
+
+r <- r %>%
+  left_join(surveyDates, by = "surveyID") %>%
+  mutate(surveyID = paste0(dateReleased, " (", surveyID, ")") %>% str_replace("S", "Survey ")) %>%
+  select(-dateReleased)
 
 # Split into list by surveys ----------------------------------------------
 surveysList <- r %>%
